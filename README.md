@@ -30,7 +30,7 @@
     ssb-tokens trace
 ````
 
-### [list)(./help/list.txt): Summarize all your coin holdings (or those of others)!
+### [list](./help/list.txt): Summarize all your token holdings (or those of others)!
 ````
     ssb-tokens list
 ````
@@ -51,9 +51,9 @@ ride on the boat, or other services offered by the crew.
 
 @initiator:
 ````
-    ssb-tokens create 100 "Alchemist Coin" 
+    ssb-tokens create 100 "Alchemist Token" 
     # Announce project. For each @backer, do:
-    ssb-tokens give 1 "Alchemist Coin" "@backer"
+    ssb-tokens give 1 "Alchemist Token" "@backer"
 ````
 
 #### Exchanges 
@@ -61,21 +61,21 @@ ride on the boat, or other services offered by the crew.
 @backer:
 ````
     # Gift to/Trade with friends
-    ssb-tokens give 1 "Alchemist Coin" "@friend"
+    ssb-tokens give 1 "Alchemist Token" "@friend"
 ````
 
 #### Redeeming
 
 @friend:
 ````
-    # Redeems a coin for a ride on the Alchemist
-    ssb-tokens give 1 "Alchemist Coin" "@initiator"
-    # Outputs: "%redeemed_coin" message ID
+    # Redeems a token for a ride on the Alchemist
+    ssb-tokens give 1 "Alchemist Token" "@initiator"
+    # Outputs: "%redeemed_token" message ID
 ````
 
 @initiator:
 ````
-    ssb-tokens burn "%redeemed_coin"
+    ssb-tokens burn "%redeemed_token"
 ````
 
 ### 2. Community Supported Agriculture
