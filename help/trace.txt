@@ -1,0 +1,20 @@
+usage: ssb-coin trace [<options>] <coins>
+
+Trace the history of <coins>. 
+
+<coins> can be the creation message of the coins (SSB_MSG_ID), a transfer 
+    message (SSB_MSG_ID), the type of currency mentioned in a creation 
+    message (ex: "USD"), or the description referred by the creation 
+    message (SSB_MSG_ID).
+
+Examples:
+
+    ssb-coin trace "hours"
+    ssb-coin trace "EUR"
+    ssb-coin trace "%AFdafed..."
+
+<options> (default?, default value, type):
+
+
+See 'ssb-coin help ssb' for an explanation of the Secure-Scuttlebutt 
+concepts (ex: SSB_MSG_ID) used.

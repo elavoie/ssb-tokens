@@ -1,0 +1,24 @@
+usage: ssb-coin burn [<options>] <coins>
+
+Destroy <coins>. <coins> can be the creation message of the coins 
+   (SSB_MSG_ID), a transfer message (SSB_MSG_ID), the type of currency 
+   mentioned in a creation message (ex: "USD"), or the description 
+   referred by the creation message (SSB_MSG_ID).
+
+You can only destroy coins that you own.
+
+Examples:
+ 
+    ssb-coin burn "hours"
+    ssb-coin burn "USD"
+    ssb-coin burn "%AFdafed..."
+
+<options> (default?, default value, type):
+
+    --description=DESC (true, DESC=null, SSB_MSG_ID)
+        Describes the purpose of the burn. DESC can either be null or an
+        SSB Message ID. The description message can be created by any
+        author (i.e. it can be someone else than you).
+
+See 'ssb-coin help ssb' for an explanation of the Secure-Scuttlebutt concepts
+(ex: SSB_MSG_ID) used.

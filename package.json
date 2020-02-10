@@ -1,0 +1,29 @@
+{
+  "name": "ssb-tokens",
+  "version": "0.1.0",
+  "description": "Tokens for community economics. Built with Secure-Scuttlebutt (https://scuttlebutt.nz/).",
+  "main": "src/index.js",
+  "bin": {
+    "ssb-coin": "./bin/index.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/elavoie/ssb-tokens.git"
+  },
+  "keywords": [
+    "Secure-Scuttlebutt",
+    "SSB"
+  ],
+  "author": "Erick Lavoie",
+  "license": "MPL-2.0",
+  "bugs": {
+    "url": "https://github.com/elavoie/ssb-coin/issues"
+  },
+  "homepage": "https://github.com/elavoie/ssb-coin#readme",
+  "dependencies": {
+    "minimist": "^1.2.0"
+  }
+}

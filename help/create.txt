@@ -1,0 +1,37 @@
+usage: ssb-coin create [<options>] <number> <currency>
+
+Create <number> coins of type <currency>. <number> can be an integer or a 
+floating point value. <currency> is a string.
+
+Examples:
+ 
+    ssb-coin create 3 "hours"
+    ssb-coin create 10.23 "USD"
+    ssb-coin create 7 "Bakery Credits (Euros)"
+    ssb-coin create 15 "2020 CSA Baskets"
+
+New coins can only be minted using one of your SSB IDs.
+
+<options> (default?, default value, type):
+
+    --id=ID (true, ID=valueOf(".ssb/secret/public"), SSB_ID)
+        SSB ID (public key) of the creator of coins. Your SSB installation 
+        should have access to the corresponding private key for the 
+        operation to succeed.
+
+    --description=DESC (true, DESC=null, SSB_MSG_ID)
+        Describes the purpose of the coins. DESC can either be null or an
+        SSB Message ID. The description message can be created by any
+        author (i.e. it can be someone else than you).
+
+    --non-transferable (false, Boolean)
+        The coins can only be given once to a different owner.
+
+    --non-burnable (false, Boolean)
+        The coins cannot be burned after a transfer.
+
+    --smallest-unit=VALUE (true, VALUE=0.01, Number)
+        The coins can be given in units of no less than VALUE.
+
+See 'ssb-coin help ssb' for an explanation of the Secure-Scuttlebutt 
+concepts (ex: SSB_MSG_ID) used.

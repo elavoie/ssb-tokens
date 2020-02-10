@@ -1,0 +1,23 @@
+usage: ssb-coin list [<options>] [<coins>] [<ssb_id>]
+
+List <coins> owned by <ssb_id>. If no <coins> given, defaults to all. If
+no <ssb_id> given, defaults to all known SSB_IDs.
+
+<coins> can be the creation message of the coins (SSB_MSG_ID), a transfer 
+    message (SSB_MSG_ID), the type of currency mentioned in a creation 
+    message (ex: "USD"), or the description referred by the creation 
+    message (SSB_MSG_ID).
+
+<ssb_id> is the alias or the SSB_ID of the recipient.
+
+Examples:
+
+    ssb-coin list "hours" "@elavoie"
+    ssb-coin list "EUR" "@andre"
+    ssb-coin list "%AFdafed..." "@YMaf8a..."
+
+<options> (default?, default value, type):
+
+
+See 'ssb-coin help ssb' for an explanation of the Secure-Scuttlebutt 
+concepts (ex: SSB_MSG_ID) used.

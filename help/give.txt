@@ -1,0 +1,42 @@
+usage: ssb-coin give [<options>] <number> <coins> [<number> <coins>, ...] <ssb_id>
+
+Transfer <number> <coins> to <ssb_id>.
+
+<number> is the number of coins to transfer, as an integer or a floating 
+    point value . It should be equal or less than the number of <coins> 
+    available. 
+<coins> can be the creation message of the coins (SSB_MSG_ID), a transfer 
+    message (SSB_MSG_ID), the type of currency mentioned in a creation 
+    message (ex: "USD"), or the description referred by the creation 
+    message (SSB_MSG_ID).
+<ssb_id> is the alias or the SSB_ID of the recipient.
+
+Examples:
+    
+    ssb-coin give 2 "hours" "@elavoie"
+    ssb-coin give 2.53 "USD" "@andre"
+    ssb-coin give 6 "%AFdafed..." "@YMaf8a..."
+
+<coins> may implicitly refer to multiple creation messages, ex: when the 
+currency or description message have been used by multiple creation 
+messages. By default, the <coins> will be spent in chronological order,
+i.e. the oldest coins will be spent first. You may specify a different
+order by explicitly specifying the SSB_MSG_IDs to transfer from.
+
+To be valid, a new transaction should:
+    1. Unambiguously determine the amount and origin of coins, from one 
+       or multiple sources;
+    2. Have available and valid transaction histories from the original 
+       creation message up to each source of coins;
+    3. Use a number of coins, from each source of coins, less or equal 
+       to the number of coins available.
+
+<options> (default?, default value, type):
+
+    --description=DESC (true, DESC=null, SSB_MSG_ID)
+        Describes the purpose of the transfer. DESC can either be null or an
+        SSB Message ID. The description message can be created by any
+        author (i.e. it can be someone else than you).
+
+See 'ssb-coin help ssb' for an explanation of the Secure-Scuttlebutt 
+concepts (ex: SSB_MSG_ID) used.

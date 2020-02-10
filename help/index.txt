@@ -1,0 +1,11 @@
+usage: ssb-coin [--help] <command> [<args>]
+
+COMMANDS:
+
+    burn        destroy some of your coins
+    create      mint new coins
+    give        give some of your coins to someone else
+    list        list your coins or those of others
+    trace       trace the history of coins
+
+See 'ssb-coin help <command>' for help about a specific command.
