@@ -1,11 +1,11 @@
-usage: ssb-coin give [<options>] <number> <coins> [<number> <coins>, ...] <ssb_id>
+usage: ssb-tokens give [<options>] <number> <tokens> [<number> <tokens>, ...] <ssb_id>
 
-Transfer <number> <coins> to <ssb_id>.
+Transfer <number> <tokens> to <ssb_id>.
 
-<number> is the number of coins to transfer, as an integer or a floating 
-    point value . It should be equal or less than the number of <coins> 
+<number> is the number of tokens to transfer, as an integer or a floating 
+    point value . It should be equal or less than the number of <tokens> 
     available. 
-<coins> can be the creation message of the coins (SSB_MSG_ID), a transfer 
+<tokens> can be the creation message of the tokens (SSB_MSG_ID), a transfer 
     message (SSB_MSG_ID), the type of currency mentioned in a creation 
     message (ex: "USD"), or the description referred by the creation 
     message (SSB_MSG_ID).
@@ -13,23 +13,23 @@ Transfer <number> <coins> to <ssb_id>.
 
 Examples:
     
-    ssb-coin give 2 "hours" "@elavoie"
-    ssb-coin give 2.53 "USD" "@andre"
-    ssb-coin give 6 "%AFdafed..." "@YMaf8a..."
+    ssb-tokens give 2 "hours" "@elavoie"
+    ssb-tokens give 2.53 "USD" "@andre"
+    ssb-tokens give 6 "%AFdafed..." "@YMaf8a..."
 
-<coins> may implicitly refer to multiple creation messages, ex: when the 
+<tokens> may implicitly refer to multiple creation messages, ex: when the 
 currency or description message have been used by multiple creation 
-messages. By default, the <coins> will be spent in chronological order,
-i.e. the oldest coins will be spent first. You may specify a different
+messages. By default, the <tokens> will be spent in chronological order,
+i.e. the oldest tokens will be spent first. You may specify a different
 order by explicitly specifying the SSB_MSG_IDs to transfer from.
 
 To be valid, a new transaction should:
-    1. Unambiguously determine the amount and origin of coins, from one 
+    1. Unambiguously determine the amount and origin of tokens, from one 
        or multiple sources;
     2. Have available and valid transaction histories from the original 
-       creation message up to each source of coins;
-    3. Use a number of coins, from each source of coins, less or equal 
-       to the number of coins available.
+       creation message up to each source of tokens;
+    3. Use a number of tokens, from each source of tokens, less or equal 
+       to the number of tokens available.
 
 <options> (default?, default value, type):
 
@@ -38,5 +38,5 @@ To be valid, a new transaction should:
         SSB Message ID. The description message can be created by any
         author (i.e. it can be someone else than you).
 
-See 'ssb-coin help ssb' for an explanation of the Secure-Scuttlebutt 
+See 'ssb-tokens help ssb' for an explanation of the Secure-Scuttlebutt 
 concepts (ex: SSB_MSG_ID) used.

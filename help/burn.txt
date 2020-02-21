@@ -1,17 +1,17 @@
-usage: ssb-coin burn [<options>] <coins>
+usage: ssb-tokens burn [<options>] <tokens>
 
-Destroy <coins>. <coins> can be the creation message of the coins 
+Destroy <tokens>. <tokens> can be the creation message of the tokens 
    (SSB_MSG_ID), a transfer message (SSB_MSG_ID), the type of currency 
    mentioned in a creation message (ex: "USD"), or the description 
    referred by the creation message (SSB_MSG_ID).
 
-You can only destroy coins that you own.
+You can only destroy tokens that you own.
 
 Examples:
  
-    ssb-coin burn "hours"
-    ssb-coin burn "USD"
-    ssb-coin burn "%AFdafed..."
+    ssb-tokens burn "hours"
+    ssb-tokens burn "USD"
+    ssb-tokens burn "%AFdafed..."
 
 <options> (default?, default value, type):
 
@@ -20,5 +20,5 @@ Examples:
         SSB Message ID. The description message can be created by any
         author (i.e. it can be someone else than you).
 
-See 'ssb-coin help ssb' for an explanation of the Secure-Scuttlebutt concepts
+See 'ssb-tokens help ssb' for an explanation of the Secure-Scuttlebutt concepts
 (ex: SSB_MSG_ID) used.

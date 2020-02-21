@@ -1,11 +1,11 @@
-usage: ssb-coin [--help] <command> [<args>]
+usage: ssb-tokens [--help] <command> [<args>]
 
 COMMANDS:
 
-    burn        destroy some of your coins
-    create      mint new coins
-    give        give some of your coins to someone else
-    list        list your coins or those of others
-    trace       trace the history of coins
+    burn        destroy some of your tokens
+    create      mint new tokens
+    give        give some of your tokens to someone else
+    list        list your tokens or those of others
+    trace       trace the history of tokens
 
-See 'ssb-coin help <command>' for help about a specific command.
+See 'ssb-tokens help <command>' for help about a specific command.
