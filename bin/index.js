@@ -36,3 +36,5 @@ if (args._.length >= 2 && COMMANDS.indexOf(args._[2]) < 0) {
 console.log(args)
 console.log(api)
 
+// TODO: Connect to an existing SSB instance or start a new one
+// see: https://github.com/fraction/oasis

@@ -3,7 +3,7 @@ Overview of Secure-Scuttlebutt (SSB) Concepts
 See the protocol guide for more details 
 (https://ssbc.github.io/scuttlebutt-protocol-guide).
 
-SSB_ID: Log/Feed/Author identifier (SSB ID), which represent the public 
+SSB_ID: Log/Feed/Author identifier (SSB ID), which represents the public 
 key of a public-private key pair used to authenticate messages.
     (ex: "@IgYpd+tCtXnlE2tYX/8rR2AGt+P8svC98WH3MdYAa8Y=.ed25519")
 

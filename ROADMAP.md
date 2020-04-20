@@ -3,7 +3,9 @@
 ## 1. Create, Give, Burn, List, and Trace tokens
     [x] CLI
     [ ] Programmer API
+       - Ensure one-to-one mapping with CLI (use minimist similar to muxrpcli/ssb-server)
     [ ] Message Schemas
+    [ ] Command-Line Tool
     [ ] Libraries
     [ ] Unit Tests
     [ ] Randomly Generated Tests
