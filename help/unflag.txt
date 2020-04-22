@@ -1,0 +1,22 @@
+usage: ssb-tokens unflag [<options>] <tokens> <label>
+
+Unflag <tokens> previously flagged with <label>. Only works for IDs you own.
+
+<tokens> is an operation message (SSB_MSG_ID) 
+
+<label> is a string.
+
+Examples:
+
+    ssb-tokens unflag "%AFdafed..." "insolvent"
+    ssb-tokens unflag "%AFdafed..." "vouched"
+
+<options> (default?, default value, type):
+
+    --owner=ID (true, ID=valueOf(".ssb/secret/public"), SSB_ID)
+        SSB ID (public key) of the creator of tokens. Your SSB installation 
+        should have access to the corresponding private key for the 
+        operation to succeed.
+
+See 'ssb-tokens help ssb' for an explanation of the Secure-Scuttlebutt 
+concepts (ex: SSB_MSG_ID) used.

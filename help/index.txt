@@ -4,8 +4,10 @@ COMMANDS:
 
     burn        destroy some of your tokens
     create      mint new tokens
+    flag        assign a label to tokens
     give        give some of your tokens to someone else
     list        list your tokens or those of others
     trace       trace the history of tokens
+    unflag      remove a label you assigned
 
 See 'ssb-tokens help <command>' for help about a specific command.

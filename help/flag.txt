@@ -1,0 +1,27 @@
+usage: ssb-tokens flag [<options>] <tokens> <label>
+
+Flag <tokens> with <label>.
+
+<tokens> is an operation message (SSB_MSG_ID) 
+
+<label> is a string.
+
+Examples:
+
+    ssb-tokens flag "%AFdafed..." "insolvent"
+    ssb-tokens flag "%AFdafed..." "vouched"
+
+<options> (default?, default value, type):
+
+    --owner=ID (true, ID=valueOf(".ssb/secret/public"), SSB_ID)
+        SSB ID (public key) of the creator of tokens. Your SSB installation 
+        should have access to the corresponding private key for the 
+        operation to succeed.
+    
+    --description=DESC (true, DESC=null, SSB_MSG_ID)
+        Describes the meaning of the label. DESC can either be null or an
+        SSB Message ID. The description message can be created by any
+        author (i.e. it can be someone else than you).
+
+See 'ssb-tokens help ssb' for an explanation of the Secure-Scuttlebutt 
+concepts (ex: SSB_MSG_ID) used.

@@ -8,12 +8,16 @@ Destroy <tokens>. <tokens> can be the creation message of the tokens
 You can only destroy tokens that you own.
 
 Examples:
- 
+
     ssb-tokens burn "hours"
     ssb-tokens burn "USD"
     ssb-tokens burn "%AFdafed..."
 
 <options> (default?, default value, type):
+    --owner=ID (true, ID=valueOf(".ssb/secret/public"), SSB_ID)
+        SSB ID (public key) of the owner of tokens. Your SSB installation 
+        should have access to the corresponding private key for the 
+        operation to succeed.
 
     --description=DESC (true, DESC=null, SSB_MSG_ID)
         Describes the purpose of the burn. DESC can either be null or an

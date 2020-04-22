@@ -14,7 +14,7 @@ New tokens can only be minted using one of your SSB IDs.
 
 <options> (default?, default value, type):
 
-    --id=ID (true, ID=valueOf(".ssb/secret/public"), SSB_ID)
+    --owner=ID (true, ID=valueOf(".ssb/secret/public"), SSB_ID)
         SSB ID (public key) of the creator of tokens. Your SSB installation 
         should have access to the corresponding private key for the 
         operation to succeed.

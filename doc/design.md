@@ -29,8 +29,4 @@ require consensus).
 ## Play Nice with other SSB Applications
 
 The library can work with a minimal number of operations offered by ssb-server,
-so as to avoid unduly loading plugins that are not useful to other
-applications. Moreover, the connection to
-[ssb-server](https://github.com/ssbc/ssb-server) is done through
-[ssb-client](https://github.com/ssbc/ssb-client) for concurrent operations with
-other currently running applications, such as [Patchwork](https://github.com/ssbc/patchwork) or [Oasis](https://github.com/fraction/oasis).
+so as to avoid unduly loading plugins that are not useful to other applications. Moreover, the connection to [ssb-server](https://github.com/ssbc/ssb-server) is done through [ssb-client](https://github.com/ssbc/ssb-client) for concurrent operations with other currently running applications, such as [Patchwork](https://github.com/ssbc/patchwork) or [Oasis](https://github.com/fraction/oasis).

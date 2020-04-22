@@ -1,21 +1,24 @@
 # Roadmap
 
-## 1. Create, Give, Burn, List, and Trace tokens
+## 1. Create, Give, Burn, List, Trace, and Flag tokens
+
     [x] CLI
-    [ ] Programmer API
-       - Ensure one-to-one mapping with CLI (use minimist similar to muxrpcli/ssb-server)
-    [ ] Message Schemas
+    [x] Programmer API
+    [x]  - Ensure one-to-one mapping with CLI
+    [x] Message Schemas
     [ ] Command-Line Tool
     [ ] Libraries
     [ ] Unit Tests
     [ ] Randomly Generated Tests
 
 ## 2. Example Applications
+
     [ ] Crowdfunding
     [ ] Small Shop Fidelity Program
     [ ] Community Supported Agriculture
 
 ## 3. Documentation
+
     [ ] Application Developer
         [ ] Example Scenarios
         [ ] Programmer API
@@ -27,6 +30,7 @@
         [ ] Permissions
 
 ## 4. Paper: Ensuring Trust in Economic Transactions in Single-Writer Append-Only Log Systems
+
     [ ] Study Similarity between SSB and Holochain
     [ ] Fully understand "The consensus number of a cryptocurrency"
     [ ] Identify Primitives Required for a Mutual Credit System (ideally similar to SSB-Tokens)
@@ -37,7 +41,8 @@
     [ ] Theorems
     [ ] Empirical Evaluation of Actual Community Transactions
 
-## 5. Real-World Deployment Considerations 
+## 5. Real-World Deployment Considerations
+
     [ ] Losing Access to Tokens as an Issuer and User
     [ ] Invalidating Tokens in Circulation
     [ ] On-boarding New Users 
@@ -53,4 +58,3 @@ Pitch: Exchange some of your coins with those of someone else!
 ## 7. Shared Accounts
 
 -> Requires Consensus Algorithms...
-

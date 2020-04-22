@@ -15,6 +15,5 @@ Examples:
 
 <options> (default?, default value, type):
 
-
 See 'ssb-tokens help ssb' for an explanation of the Secure-Scuttlebutt 
 concepts (ex: SSB_MSG_ID) used.
