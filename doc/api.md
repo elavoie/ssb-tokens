@@ -4,15 +4,97 @@ The API closely follows the [command-line interface](./help/index.txt).  See [De
 
 For all message types below, `<version>=J9oN`.
 
+## Terminology
+
+### Meta-operation
+
+*Def:* A message that [adds](#tokensflagtokens-label-options-cb) or [removes](#tokensunflagtokens-label-options-cb) information *about* an [operation](#operation). 
+
+#### Meta-operation Identifier
+
+*Def:* The identifier of a [meta-operation](#meta-operation). Follows the [SSB Message ID](#ssb-message-id) format.
+
+### Operation
+
+*Def:* A message that [creates](#tokenscreatenumber-currency-options-cb), [transfers (gives)](#tokensgivetokens-recipient-options-cb), or [destroys (burns)](#tokensburntokens-options-cb) tokens. 
+
+#### Operation Identifier
+
+*Def:* The identifier of an [operation](#operation).  Follows the [SSB Message ID](#ssb-message-id) format.
+
+#### *Ancestor* operations
+
+*Def*: Previous operations that provide tokens for the current one.
+
+Immediate ancestors are mentioned in the `source` property of a [give](#tokensgivetokens-recipient-options-cb) or [burn](#tokensburntokens-options-cb) message. Transitive ancestors are mentioned in the `source` property of an ancestor.
+
+#### *Descendant* operations
+
+*Def*: Following operations that source their tokens from the current one.
+
+Descendants are not directly encoded in messages because they are unknown at the time of writing. They are derived indirectly from the chain of [ancestors](#ancestor-operations) of later [operations](#operation).
+
+#### *Root* operations
+
+*Def:* Oldest *ancestors* of an operation. Always a [create](#tokenscreatenumber-currency-options-cb) operation.
+
+### Secure-Scuttlebutt (SSB) Message
+
+*Def:* An immutable message replicated with the [Secure Scuttlebutt](https://en.wikipedia.org/wiki/Secure_Scuttlebutt) protocol, created by a single owner.
+
+The integrity of messages is guaranteed by [cryptographic primitives](https://ssbc.github.io/scuttlebutt-protocol-guide/#feeds). See 'Message Format' in the [Protocol Guide](https://ssbc.github.io/scuttlebutt-protocol-guide/#feeds).
+
+#### SSB Message ID
+
+*Def:* Hash of the message including signature. 
+
+See 'Message Format' in the [Protocol Guide](https://ssbc.github.io/scuttlebutt-protocol-guide/#feeds).
+
+### Tokens
+
+*Def:* Units of [exchange](https://en.wikipedia.org/wiki/Medium_of_exchange) and [accounting](https://en.wikipedia.org/wiki/Unit_of_account) between (SSB) users. 
+
+Individual tokens are not represented by individual SSB messages: instead, they are [created](#tokenscreatenumber-currency-options-cb), [transferred (given)](#tokensgivetokens-recipient-options-cb), or [destroyed (burned)](#tokensburntokens-options-cb) in bulk.
+
+Any user can create as many tokens as they wish for whichever purpose. The usefulness of tokens to [store value](https://en.wikipedia.org/wiki/Store_of_value) therefore depends on: (1) the behaviour of their creator (ex: how many they create and how often) and (2) the trust in other users that their creator can fulfill the associated promises, if any.  Tokens are therefore ill-suited to implement cryptocurrencies that derive their value from [artificial scarcity](https://en.wikipedia.org/wiki/Artificial_scarcity), such as [Bitcoin]([Bitcoin - Wikipedia](https://en.wikipedia.org/wiki/Bitcoin#Mining)).
+
+#### *Unspent* tokens
+
+*Def*: Tokens created or previously received, that have not yet been transferred or destroyed.
+
+In practice, this means the remaining (positive) balance between the total number of tokens received from [create](#tokenscreatenumber-currency-options-cb) and [give](#tokensgivetokens-recipient-options-cb) operations, and the total number of tokens spent in [give](#tokensgivetokens-recipient-options-cb) and [burn](#tokensburntokens-options-cb) operations.
+
 ## Initialization
 
-```js
-    var ssb = require('secret-stack')
-    ssb.use(require('ssb-tokens'))
-    // ex: ssb.tokens.create(...)
+```javascript
+    var Server = require('ssb-server')
+    var config = require('ssb-config')
+
+    // add ssb-tokens and dependencies
+    Server.use(require('ssb-tokens'))
+    
+    // create the server 
+    var ssb = Server(config)
+
+    // call ssb-tokens' operations
+    ssb.tokens.create(...)
 ```
 
 `ssb` is a currently running instance of SSB, accessible through [ssb-client](https://github.com/ssbc/ssb-client), that supports the following operations: (TODO: Complete once implementation is working.)
+
+
+
+```javascript
+    // (Optional) save the updated list of methods, 
+    // including ssb-tokens', for ssb-client
+    var fs = require('fs')
+    var path = require('path')
+    var manifest = server.getManifest()
+    fs.writeFileSync(
+      path.join(config.path, 'manifest.json'), // ~/.ssb/manifest.json
+      JSON.stringify(manifest)
+    )
+```
 
 ## Operations
 
@@ -20,32 +102,6 @@ For all message types below, `<version>=J9oN`.
 
 1. The private key of `owner` has been provided or is accessible.
 2. `ssb` is correctly running.
-
-### Terminology
-
-#### *Unspent* tokens
-
-*Def*: One or multiple [Operation ID](#operation-identifier), either created by `owner` (an [SSB ID](./help/ssb.txt)) or that list `owner` as `recipient`, in which tokens have not been: (1) completely given to other [SSB ID](./help/ssb.txt)s, or (2) burnt. 
-
-#### Operation
-
-*Def:* The message generated by a `tokens.create`, `tokens.give`, or `tokens.burn` operation.
-
-#### Operation Identifier
-
-*Def:* The identifier used to refer to an [operation](#operation).  Follows the [SSB Message ID](./help/ssb.txt) format.
-
-#### Flag/Unflag Identifier
-
-*Def:* The identifier used to refer to a [flag](#tokens.flag(tokens,-label,-?options,-cb))/[unflag](#tokens.unflag(tokens,-label,-options?,-cb)) message. Follows the [SSB Message ID](./help/ssb.txt) format.
-
-#### *Ancestor* operation
-
-*Def*: Operation that is directly or transitively mentioned in the `source` of an operation.
-
-#### *Root* operations
-
-*Def:* `tokens.create` operations that are *ancestors* of an operation.
 
 ### tokens.create(number, currency, ?options, cb)
 
@@ -97,7 +153,7 @@ Give `tokens` to `recipient` ([SSB ID](./help/ssb.txt)).
 
 * `number` :  automatically finds [*unspent* tokens](#unspent-tokens) from [*root* operations](#root-operations) that match `options.currency` or `options.description`. Tokens are spent from oldest to newest.
 
-The callback should have signature `cb(err)`. In that case, `success` is always `true`, and `err` is `false` if the operation was successful or truthy (Error) otherwise.
+The callback should have signature `cb(err)`. `err` is `false` if the operation was successful or `Error` (truthy) otherwise.
 
 Options can be the following:
 
@@ -113,7 +169,7 @@ where:
 
 * `owner`: is the [SSB ID](./help/ssb.txt) or [SSB Keys](https://github.com/ssbc/ssb-keys) that is giving the tokens.
 * `currency` : is the currency (String) of [*root* operations](#root-operations). Automatically resolved to all previous [Operation ID](#operation-identifier)s of *unspent* tokens that match. Errors if `tokens` is not `null`.
-* `description`: is the [SSB Message ID](./help/ssb.txt) of [*root* operations](#root-operations). Automatically resolved to all previous [*unspent* tokens](#unspent-tokens) that match. Errors if `tokens` is not `null`.
+* `description`: is the [SSB Message ID](./help/ssb.txt) of [*root* operations](#root-operations)'s description. Automatically resolved to all previous [*unspent* tokens](#unspent-tokens) that match. Errors if `tokens` is not `null`.
 
 #### Pre-conditions
 
@@ -121,7 +177,7 @@ Let `roots` be the *roots* of `tokens`:
 
 1. All `roots` must have the same `currency`, `description`, and `smallest-unit`.
 2. The total number of `tokens` spent in previous [tokens.give](tokens.give(number, source, recipient, ?options, ?cb) => success) messages of `owner` is less than the total number received.
-3. `number` is a multiple of `roots["smallest-unit"]`.
+3. `number` is an integer multiple of `roots["smallest-unit"]`.
 4. Every previous operation reachable from `tokens` must be valid, i.e. fulfill its pre-conditions.
 
 #### => Log Effect(s)
@@ -332,4 +388,4 @@ where:
 }
 ```
 
-The previous message is automatically assigned a [Unflag_ID](#flag/unflag-identifier) by SSB.
+The previous message is automatically assigned an [Unflag_ID](#flag/unflag-identifier) by SSB.

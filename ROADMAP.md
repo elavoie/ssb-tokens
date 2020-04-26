@@ -6,9 +6,9 @@
     [x] Programmer API
     [x]  - Ensure one-to-one mapping with CLI
     [x] Message Schemas
-    [ ] Command-Line Tool
     [ ] Libraries
     [ ] Unit Tests
+    [ ] Command-Line Tool
     [ ] Randomly Generated Tests
 
 ## 2. Example Applications
