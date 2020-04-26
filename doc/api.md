@@ -56,7 +56,7 @@ See 'Message Format' in the [Protocol Guide](https://ssbc.github.io/scuttlebutt-
 
 Individual tokens are not represented by individual SSB messages: instead, they are [created](#tokenscreatenumber-currency-options-cb), [transferred (given)](#tokensgivetokens-recipient-options-cb), or [destroyed (burned)](#tokensburntokens-options-cb) in bulk.
 
-Any user can create as many tokens as they wish for whichever purpose. The usefulness of tokens to [store value](https://en.wikipedia.org/wiki/Store_of_value) therefore depends on: (1) the behaviour of their creator (ex: how many they create and how often) and (2) the trust in other users that their creator can fulfill the associated promises, if any.  Tokens are therefore ill-suited to implement cryptocurrencies that derive their value from [artificial scarcity](https://en.wikipedia.org/wiki/Artificial_scarcity), such as [Bitcoin]([Bitcoin - Wikipedia](https://en.wikipedia.org/wiki/Bitcoin#Mining)).
+Any user can create as many tokens as they wish for whichever purpose. The usefulness of tokens to [store value](https://en.wikipedia.org/wiki/Store_of_value) therefore depends on: (1) the behaviour of their creator (ex: how many they create and how often) and (2) the trust in other users that their creator can fulfill the associated promises, if any.  Tokens are therefore ill-suited to implement cryptocurrencies that derive their value from [artificial scarcity](https://en.wikipedia.org/wiki/Artificial_scarcity), such as [Bitcoin](https://en.wikipedia.org/wiki/Bitcoin#Mining).
 
 #### *Unspent* tokens
 
@@ -80,9 +80,7 @@ In practice, this means the remaining (positive) balance between the total numbe
     ssb.tokens.create(...)
 ```
 
-`ssb` is a currently running instance of SSB, accessible through [ssb-client](https://github.com/ssbc/ssb-client), that supports the following operations: (TODO: Complete once implementation is working.)
-
-
+Optionally, the API of ssb-tokens can be advertised for [ssb-client](https://github.com/ssbc/ssb-client)s through a manifest file:
 
 ```javascript
     // (Optional) save the updated list of methods, 
@@ -95,6 +93,8 @@ In practice, this means the remaining (positive) balance between the total numbe
       JSON.stringify(manifest)
     )
 ```
+
+`ssb-tokens` must be installed in [ssb-server](https://github.com/ssbc/ssb-server) rather than in [ssb-client](https://github.com/ssbc/ssb-client) if there is a possibility of multiple clients issuing operations for the same `owner` (ex: [giving](#tokensgivetokens-recipient-options-cb) tokens): this guarantees that the tokens spent in one client will be seen by the others, avoiding invalid operations.
 
 ## Operations
 
@@ -122,7 +122,7 @@ Options can be the following:
 where:
 
 * `owner`: is the [SSB ID](./help/ssb.txt) or [SSB Keys](https://github.com/ssbc/ssb-keys) that is creating the tokens.
-* `description`: is an [SSB Message ID](./help/ssb.txt) whose content describes the purpose and conditions of the tokens.
+* `description`: is an optional [SSB Message ID](./help/ssb.txt) whose content describes the purpose and conditions of the tokens.
 * `smallest-unit`: is a number that represents the smallest undivisible unit of the currency (ex: `0.01` for cents in `USD`).
 
 #### => Log Effect(s)
