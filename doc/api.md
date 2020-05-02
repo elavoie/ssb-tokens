@@ -50,6 +50,12 @@ The integrity of messages is guaranteed by [cryptographic primitives](https://ss
 
 See 'Message Format' in the [Protocol Guide](https://ssbc.github.io/scuttlebutt-protocol-guide/#feeds).
 
+#### SSB Owner ID
+
+*Def:* Public key of the log owner.
+
+See ''Keys and identities" in  the [Protocol Guide](https://ssbc.github.io/scuttlebutt-protocol-guide/#keys-and-identities).
+
 ### Tokens
 
 *Def:* Units of [exchange](https://en.wikipedia.org/wiki/Medium_of_exchange) and [accounting](https://en.wikipedia.org/wiki/Unit_of_account) between (SSB) users. 
@@ -72,7 +78,7 @@ In practice, this means the remaining (positive) balance between the total numbe
 
     // add ssb-tokens and dependencies
     Server.use(require('ssb-tokens'))
-    
+
     // create the server 
     var ssb = Server(config)
 
@@ -100,28 +106,28 @@ Optionally, the API of ssb-tokens can be advertised for [ssb-client](https://git
 
 ### Pre-conditions common to all operations
 
-1. The private key of `owner` has been provided or is accessible.
-2. `ssb` is correctly running.
+1. The private key of `owner` is accessible by the running [ssb-server](https://github.com/ssbc/ssb-server).
+2. `ssb`, an [ssb-server](https://github.com/ssbc/ssb-server) or [ssb-client](https://github.com/ssbc/ssb-client) instance,  is correctly running.
 
-### tokens.create(number, currency, ?options, cb)
+### ssb.tokens.create(number, currency, ?options, cb(err,msg))
 
-Create `number` (Number) of type `currency` (String). 
+Create `number` (Number) of type `currency` (String), with `currency` at most 30 characters long.
 
-The callback should have signature `cb(err)`. In that case, `err` is `null` if the operation was successful or `Error` (truthy) otherwise.
+The callback should have signature `cb(err, msg)`: `err` is `null` if the operation was successful or `Error` (truthy) otherwise, and `msg` is the message saved in the log, augmented with its assigned `id` ([SSB Message ID](./help/ssb.txt)), and its `owner` ([SSB Owner ID](#ssb-owner-id)).
 
 Options can be the following:
 
 ```js
 {
-    owner: SSB_ID || SSB_KEYS,       // Default: ".ssb/secret"
-    description: SSB_MSG_ID || null, // Default: null
-    "smallest-unit": Number          // Default: 0.01
+    owner: SSB_OWNER_ID || null,       // Default: null
+    description: SSB_MSG_ID || null,   // Default: null
+    "smallest-unit": Number            // Default: 0.01
 }
 ```
 
 where:
 
-* `owner`: is the [SSB ID](./help/ssb.txt) or [SSB Keys](https://github.com/ssbc/ssb-keys) that is creating the tokens.
+* `owner`: is the [SSB Owner ID](#ssb-owner-id) that is creating the tokens. If `null`, use the default log's owner.
 * `description`: is an optional [SSB Message ID](./help/ssb.txt) whose content describes the purpose and conditions of the tokens.
 * `smallest-unit`: is a number that represents the smallest undivisible unit of the currency (ex: `0.01` for cents in `USD`).
 
@@ -139,9 +145,9 @@ where:
 }
 ```
 
-The previous message is automatically assigned an [Operation_ID](#operation-identifier) by SSB.
+The previous message is automatically assigned an`id` ([SSB Message ID](./help/ssb.txt)) by SSB for publication in `owner` ([SSB Owner ID](#ssb-owner-id))'s' log.
 
-### tokens.give(tokens, recipient, ?options, cb)
+### ssb.tokens.give(tokens, recipient, ?options, cb)
 
 Give `tokens` to `recipient` ([SSB ID](./help/ssb.txt)). 
 
@@ -194,7 +200,7 @@ Let `roots` be the *roots* of `tokens`:
 
 The previous message is automatically assigned an [Operation_ID](#operation-identifier) by SSB.
 
-### tokens.burn(tokens, ?options, cb)
+### ssb.tokens.burn(tokens, ?options, cb)
 
 Burn (owned) `tokens`.
 
@@ -241,7 +247,7 @@ Let `roots` be the *roots* of `tokens`:
 
 The previous message is automatically assigned an [Operation_ID](#operation-identifier) by SSB.
 
-### tokens.list(filter, owner, ?options, cb)
+### ssb.tokens.list(filter, owner, ?options, cb)
 
 List tokens owned by `owner` that match `filter`.
 
@@ -284,7 +290,7 @@ where:
 
 #### => Log Effect(s): None
 
-### tokens.trace(tokens,  ?options, cb)
+### ssb.tokens.trace(tokens,  ?options, cb)
 
 Trace the history of `tokens`.
 
@@ -321,7 +327,7 @@ where:
 
 #### => Log Effect(s): None
 
-### tokens.flag(tokens, label, ?options, cb)
+### ssb.tokens.flag(tokens, label, ?options, cb)
 
 Flag `tokens` with `label`.
 
@@ -357,7 +363,7 @@ where:
 
 The previous message is automatically assigned a [Flag_ID](#flag/unflag-identifier) by SSB.
 
-### tokens.unflag(tokens, label, options?, cb)
+### ssb.tokens.unflag(tokens, label, options?, cb)
 
 Remove previously assigned flag `label` from `tokens`.
 
