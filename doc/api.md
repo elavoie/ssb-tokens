@@ -145,7 +145,7 @@ where:
 }
 ```
 
-The previous message is automatically assigned an`id` ([SSB Message ID](#ssb-message-id)) by SSB for publication in `owner` ([SSB Owner ID](#ssb-owner-id))'s' log.
+The previous message is automatically assigned an`id` ([SSB Message ID](#ssb-message-id)) by SSB for publication in `owner` ([SSB Owner ID](#ssb-owner-id))'s log.
 
 ### ssb.tokens.give(tokens, recipient, ?options, cb)
 
