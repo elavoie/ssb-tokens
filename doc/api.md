@@ -1,6 +1,6 @@
 # Application Programming Interface (API)
 
-The API closely follows the [command-line interface](./help/index.txt).  See [Design](./doc/design.md) for a detailed rationale behind the design.
+The API closely follows the [command-line interface](../help/index.txt).  See [Design](../doc/design.md) for a detailed rationale behind the design.
 
 For all message types below, `<version>=J9oN`.
 
