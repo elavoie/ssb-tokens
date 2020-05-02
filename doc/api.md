@@ -113,7 +113,7 @@ Optionally, the API of ssb-tokens can be advertised for [ssb-client](https://git
 
 Create `number` (Number) of type `currency` (String), with `currency` at most 30 characters long.
 
-The callback should have signature `cb(err, msg)`: `err` is `null` if the operation was successful or `Error` (truthy) otherwise, and `msg` is the message saved in the log, augmented with its assigned `id` ([SSB Message ID](./help/ssb.txt)), and its `owner` ([SSB Owner ID](#ssb-owner-id)).
+The callback should have signature `cb(err, msg)`: `err` is `null` if the operation was successful or `Error` (truthy) otherwise, and `msg` is the message saved in the log, augmented with its assigned `id` ([SSB Message ID](#ssb-message-id)), and its `owner` ([SSB Owner ID](#ssb-owner-id)).
 
 Options can be the following:
 
@@ -128,7 +128,7 @@ Options can be the following:
 where:
 
 * `owner`: is the [SSB Owner ID](#ssb-owner-id) that is creating the tokens. If `null`, use the default log's owner.
-* `description`: is an optional [SSB Message ID](./help/ssb.txt) whose content describes the purpose and conditions of the tokens.
+* `description`: is an optional [SSB Message ID](#ssb-message-id) whose content describes the purpose and conditions of the tokens.
 * `smallest-unit`: is a number that represents the smallest undivisible unit of the currency (ex: `0.01` for cents in `USD`).
 
 #### => Log Effect(s)
@@ -145,7 +145,7 @@ where:
 }
 ```
 
-The previous message is automatically assigned an`id` ([SSB Message ID](./help/ssb.txt)) by SSB for publication in `owner` ([SSB Owner ID](#ssb-owner-id))'s' log.
+The previous message is automatically assigned an`id` ([SSB Message ID](#ssb-message-id)) by SSB for publication in `owner` ([SSB Owner ID](#ssb-owner-id))'s' log.
 
 ### ssb.tokens.give(tokens, recipient, ?options, cb)
 
