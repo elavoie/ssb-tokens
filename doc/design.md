@@ -26,6 +26,12 @@ types (ex: ````tokens/<semver>/<operation>````), since the SSB community
 does not enforce unicity of message types between applications (i.e. this would
 require consensus).
 
+## API Options Match JSON SSB Message Schemas
+
+It may save typing to choose option names in camelCase (and would be more idiomatic to JavaScript), that are different from the usual JSON conventions (ex: `options.smallestUnits` vs `options["smallest-unit"]` used for recorded messages. However, it increases the mental burden to remember the correspondance rules between both. We therefore prefer to use the JSON conventions for API options.
+
+
+
 ## Play Nice with other SSB Applications
 
 The library can work with a minimal number of operations offered by ssb-server,
