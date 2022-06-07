@@ -106,6 +106,14 @@ Optionally, the API of ssb-tokens can be advertised for [ssb-client](https://git
 
 `ssb-tokens` must be installed in [ssb-server](https://github.com/ssbc/ssb-server) rather than in [ssb-client](https://github.com/ssbc/ssb-client) if there is a possibility of multiple clients issuing operations for the same `owner` (ex: [giving](#tokensgivetokens-recipient-options-cb) tokens): this guarantees that the tokens spent in one client will be seen by the others, avoiding invalid operations.
 
+### Required Plugins `ssb-server`
+
+1. [ssb-query](https://github.com/ssbc/ssb-query)
+
+### Optional Plugins `ssb-server`
+
+1. [ssb-identities](https://github.com/ssbc/ssb-identities) to use the `owner` option, which can use a different identity than the default.
+
 ## Operations
 
 ### Common Pre-conditions
@@ -153,19 +161,13 @@ The previous message is automatically assigned an`id` ([SSB Message ID](#ssb-mes
 
 ### ssb.tokens.give(tokens, recipient, ?options, cb(err, msg))
 
-Give `tokens` to `recipient` ([SSB Log ID](#ssb-log-id)). 
+Give (owned) `tokens` to `recipient` ([SSB Log ID](#ssb-log-id)). 
 
 `tokens` can be one of the followings:
 
-* `operation-id` ([SSB Message ID](#ssb-message-id)): gives all the remaining [*unspent* tokens](#unspent-tokens) from `operation-id`. `operation-id` must be a valid [operation](#operation) and there should be remaining [unspent tokens](#unspent-tokens).
+* `operation-id` ([SSB Message ID](#ssb-message-id)): gives all the remaining [*unspent* tokens](#unspent-tokens) from `operation-id`. 
 
-* `[ [number, operation-id], ...]` :  gives `number` tokens from `operation-id` for each pair in the list. `operation-id`s must be valid [operations](#operations), their [root operations](#root-operations)' `currency` and `description` must match, and each `operation-id` must have at least `number` [unspent tokens](#unspent-tokens).
-
-* `number` (Number):  automatically finds the `operation-id`s of [unspent tokens](#unspent-tokens) that match `options.currency` and `options["root-description"]` (match any when `null`). Tokens are spent from oldest to newest.
-
-* `null` : automatically finds the `operation-id`s of [*unspent* tokens](#unspent-tokens) that match `options.currency` and `options["root-description"]` (match any when `null`).  All tokens are spent.
-
-`owner` can only give [*unspent* tokens](#unspent-tokens) they own: all explicitly listed, or implicitly matched, `operation-id`s of `tokens` must have `owner` as `recipient`.
+* `[ [number, operation-id], ...]` :  gives `number` tokens from `operation-id` for each pair in the list. 
 
 The callback should have signature `cb(err, msg)`: `err` is `null` if the operation was successful or `Error` (truthy) otherwise, and `msg` is the message saved in the log, augmented with its assigned `id` ([SSB Message ID](#ssb-message-id)), and its `owner` ([SSB Log ID](#ssb-log-id)).
 
@@ -174,25 +176,25 @@ Options can be the following:
 ```js
 {
     owner: SSB_LOG_ID || null,           // Default: null
-    currency: String || null,              // Default: null
-    "root-description": SSB_MSG_ID || null // Default: null
 }
 ```
 
 where:
 
 * `owner`: is the [SSB Log ID](#ssb-log-id) that is giving the tokens. If `null`, use the default log ID ([ssb-server](https://github.com/ssbc/ssb-server) uses `~/.ssb/secret` by default).
-* `currency` : is the `currency` (String) of [*root* operations](#root-operations). Only keep [*root* operations](#root-operations) that match. Errors if inconsistent with the [*root* operations](#root-operations) of `tokens`'s `operation-id`s.
-* `root-description`: is the `description` ([SSB Message ID](#ssb-message-id)) of [*root* operations](#root-operations). Only keep [*root* operations](#root-operations) that match. Errors if inconsistent with the [*root* operations](#root-operations) of `tokens`'s `operation-id`s.
 
-#### Pre-conditions
+#### Pre-Conditions
+
+`tokens` must be owned by `owner`, i.e. `owner` either created or received the tokens from others, and has not burned them already.
+
+The total number of [*unspent* tokens](#spent-tokens), prior to this operation, is greater or equal to the `number` of tokens given, for each pair of `number` and `operation-id`.
+
+[Ancestor operations](#ancestors-operation) of `tokens` must be valid, i.e. fulfill their pre-conditions.
 
 Let `roots` be the [*root* operations](#root-operations) of `tokens`:
 
 1. All `roots` must have the same `currency`, `description`, and `smallest-unit`.
-2. The total number of [*unspent* tokens](#unspent-tokens) owned by `owner` that derive from `roots` is larger than the `number` of `tokens` to give.
-3. `number` is an integer multiple of `roots["smallest-unit"]`.
-4. Every previous operation reachable from `tokens` must be valid, i.e. fulfill its pre-conditions.
+2. `number` is an integer multiple of `roots['smallest-unit']`.
 
 #### => Log Effect(s)
 
@@ -308,7 +310,7 @@ Remove previously assigned flag `label` from `tokens`.
 
 ```javascript
 {
-    witness: SSB_ID || SSB_KEYS,          // Default: ".ssb/secret"  
+    witness: SSB_ID || null,          // Default: ".ssb/secret"  
 }
 ```
 
@@ -370,7 +372,7 @@ The callback should have signature `cb(err, result)`. `err` is `null` if the ope
 
 ```js
 {
-    status: &#39;spent&#39; || &#39;unspent&#39; || &#39;all&#39;,   // Default: &#39;unspent&#39;
+    status: "spent" || "unspent" || "all"   // Default: "unspent"
 }
 ```
 
@@ -388,32 +390,19 @@ Trace the history of `tokens`.
 
 - `operation-id` ([SSB Message ID](./help/ssb.txt)): shows the *ancestors* of [Operation ID](#operation-identifier).
 
-- `root-currency` (String): shows the *ancestors* of all [operations](#operation) whose *root*'s `currency` matches `root-currency`.
+- `[ operation-id, ...]` (a list of [Operation ID](#operation-identifier)): shows the ancestors of [Operation ID](#operation-identifier)s.
 
-- `root-description` ([SSB Message ID](./help/ssb.txt)): show the ancestors of operations whose *roots'* `description` match `root-description`.
-
-The callback should have signature `cb(err, traces)`. `err` is `null` if the operation was successful or `Error` (truthy) otherwise. `traces = [ trace, ...]` where each `trace` is a recursive tree of operations. For each operation, the [Operation ID](#operation-identifier) listed in `source` is replaced by the referred [operation](#operation), and the following properties are added:
+The callback should have signature `cb(err, dag, operations)`. `err` is `null` if the operation was successful or `Error` (truthy) otherwise. `dag = [ tokens... ]` is a directed acyclic graph where each `operation-id`  of `tokens` is a  tip of the graph. `operations = { operation-id: operation, ... }` for each `operation-id` appearing in `dag`. For each operation, the [Operation ID](#operation-identifier) listed in `source` is replaced by the referred [operation](#operation), and the following properties are added:
 
 ```javascript
 {
     id: operation_id,
     valid: true || Error(msg),
+    unspent: number,
     flags: [ label, ... ]
 }
 ```
 
-where `operation_id` is the corresponding [Operation ID](#operation-identifier) and `valid` is `true` if all *ancestors* are valid and the operation fulfills its pre-conditions.
-
-`options` can be the following:
-
-```js
-{
-    status: &#39;spent&#39; || &#39;unspent&#39; || &#39;all&#39;,   // Default: &#39;unspent&#39;
-}
-```
-
-where:
-
-- `status`: If `spent`, show only operations with tokens completely spent. If `unspent`, show only operations with *unspent* tokens. If `all`, show all operations. Ignored if `tokens = operation_id`.
+where `operation_id` is the corresponding [Operation ID](#operation-identifier), `valid` is `true` if all *ancestors* are valid and the operation fulfills its pre-conditions, `unspent` is the number of unspent tokens, and `flags` are the flags on this operation.
 
 #### => Log Effect(s): None
