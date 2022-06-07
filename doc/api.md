@@ -345,7 +345,7 @@ List tokens owned by `owner` that match `filter`.
 
 `filter` can be one of the followings:
 
-- `operation-id` ([SSB Message ID](./help/ssb.txt)): show operations that have [Operation ID](#operation-identifier) as an *ancestor*.
+- `root-id` ([SSB Message ID](./help/ssb.txt)): show operations whose root match `root-id`.
 
 - `root-currency` (String): show operations whose *root*s' `currency` match `root-currency`.
 
@@ -376,21 +376,31 @@ The callback should have signature `cb(err, tokens)`. `err` is `null` if the ope
 Each [operation](#operation) has the following properties added:
 ```javascript
     id: operation_id,
+    unspent: Number,
+    balance: Number,
     flags: [ label, ... ]  
 ```
+
+Each `token` maintains the following invariants:
+```javascript
+    sum = (a,b) => a+b
+    balance = received.map( (op) => op.unspent ).reduce(sum)
+    balance = received.concat(given).concat(burnt)
+                    .map( (op) => op.balance ).reduce(sum)
+```
+
+Moreover:
+    1. All operations in `given` and `burnt` have operations in `received` as `source`. 
+    2. Operations within `received` and `given` are sorted in topological order, i.e. operations that depend on earlier operations appear after.
  
 
 `options` can be the following:
 
 ```js
 {
-    status: "spent" || "unspent" || "all"   // Default: "unspent"
 }
 ```
 
-where:
-
-- `status`: If `spent`, show only [operations](#operation) with tokens completely spent. If `unspent`, show only operations with *unspent* tokens. If `all`, show all operations.
 
 #### => Log Effect(s): None
 
