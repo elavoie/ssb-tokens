@@ -359,14 +359,26 @@ List tokens owned by `owner` that match `filter`.
 
 - `null`: show operations of tokens owned by anyone.
 
-The callback should have signature `cb(err, result)`. `err` is `null` if the operation was successful or `Error` (truthy) otherwise. `result` is `[operation, ...]` that match `filter` and `owner`. Each [operation](#operation) has the following properties added:
+The callback should have signature `cb(err, tokens)`. `err` is `null` if the operation was successful or `Error` (truthy) otherwise. `tokens` is `[token, ...]` that match `filter` and `owner`. Each `token` has the following properties:
 
 ```javascript
 {
-    id: operation_id,
-    flags: [ label, ... ]    
+    owner: SSB_ID, 
+    currency: String,
+    balance: Number,
+    "root-description": SSB_MSG_ID || null,
+    received: [ operation, ... ],
+    given: [ operation, ... ],
+    burnt: [ operation, ... ]
 }  
 ```
+
+Each [operation](#operation) has the following properties added:
+```javascript
+    id: operation_id,
+    flags: [ label, ... ]  
+```
+ 
 
 `options` can be the following:
 
