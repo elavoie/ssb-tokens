@@ -366,7 +366,7 @@ The callback should have signature `cb(err, tokens)`. `err` is `null` if the ope
     owner: SSB_ID, 
     currency: String,
     balance: Number,
-    "root-description": SSB_MSG_ID || null,
+    description: SSB_MSG_ID || null,
     received: [ operation, ... ],
     given: [ operation, ... ],
     burnt: [ operation, ... ]
