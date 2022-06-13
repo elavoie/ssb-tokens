@@ -2,16 +2,14 @@
 
 ## 1. Create, Give, Burn, List, Trace, and Flag tokens
 
-    [x] CLI
-    [x] Programmer API
-    [x]  - Ensure one-to-one mapping with CLI
-    [x] Message Schemas
     [ ] Libraries
     [ ] - Add missing syntactic validation to burn
     [ ] - Add validation of dependencies to all operations
     [ ] - Change op.owner to op.author for output of create,give,burn for consistency with list
     [ ]   - Update doc/api.md
+    [ ] - 2nd pass on implementation for clarity
     [ ] Command-Line Tool
+    [ ]  - Ensure one-to-one mapping with API
     [ ] Identify and flag invalid messages
     [ ] Randomly Generated Tests
 

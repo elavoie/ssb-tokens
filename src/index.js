@@ -190,7 +190,7 @@ function create (ssb, api)  {
     }
 
     options.description = options.description || null
-    if (options.description && !ref.isLink(options.description)) {
+    if (options.description && !ref.isMsgId(options.description)) {
       return cb(new Error("tokens.create: Invalid description, expected SSB Message ID instead of '" + options.description + "'.")) 
     }
 
@@ -284,7 +284,7 @@ function give (ssb,api)  {
 
         if (s.hasOwnProperty('id') &&
             (typeof s.id !== 'string' ||
-            !ref.isLink(s.id))) {
+            !ref.isMsgId(s.id))) {
           return new Error("tokens.give: Invalid source id, expected SSB_MESSAGE_ID " +
                            "instead of " + JSON.stringify(s.id) + ".")
         } 
@@ -309,7 +309,7 @@ function give (ssb,api)  {
       throw new Error("tokens.give: Invalid callback of type '" + (typeof cb) + "'.")
     }
     if (typeof source === 'string') {
-      if (!ref.isLink(source)) {
+      if (!ref.isMsgId(source)) {
         return cb(new Error("tokens.give: Invalid tokens reference, expected SSB Message ID instead of '" + tokens 
                             + "'."))   
       }
@@ -425,7 +425,7 @@ function list (ssb,api) {
 
   function updateSource(opCache, op) {
     op.source.forEach( (s) => {
-      var opId = ref.isLink(s) ? s : s.id
+      var opId = ref.isMsgId(s) ? s : s.id
       if (opCache[opId]) {
         var op = opCache[opId]
         op["unspent"] -= s.amount || op.amount // give or burn source
@@ -656,7 +656,7 @@ function list (ssb,api) {
       return cb(new Error("tokens.list: Invalid currency '" + filter.currency + "'"))
     }
 
-    if (typeof filter.description !== 'undefined' && (typeof filter.description !== 'string' || !ref.isLink(filter.description))) {
+    if (typeof filter.description !== 'undefined' && (typeof filter.description !== 'string' || !ref.isMsgId(filter.description))) {
       return cb(new Error("tokens.list: Invalid description '" + filter.description + "'"))
     }
 
@@ -686,7 +686,7 @@ function burn (ssb,api)  {
       return cb(null, op)
     }
     
-    if (typeof source === "string" && ref.isLink(source)) {
+    if (typeof source === "string" && ref.isMsgId(source)) {
       source = [ source ]
     }
 
