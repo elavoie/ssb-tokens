@@ -401,7 +401,7 @@ Each [operation](#operation) has the following properties added:
 
 Each `token` maintains the following invariants, given `sum = (a,b) => a+b`:
 ```javascript
-    unspent =  created.map( (op) => op.unspent ).reduce(sum) +
+    balance =  created.map( (op) => op.unspent ).reduce(sum) +
               received.map( (op) => op.unspent ).reduce(sum)
 
     balance =  created.map( (op) =>  op.amount ).reduce(sum) +
