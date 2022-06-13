@@ -7,13 +7,17 @@
     [x]  - Ensure one-to-one mapping with CLI
     [x] Message Schemas
     [ ] Libraries
-    [ ] Unit Tests
+    [ ] - Add missing syntactic validation to burn
+    [ ] - Add validation of dependencies to all operations
+    [ ] - Change op.owner to op.author for output of create,give,burn for consistency with list
+    [ ]   - Update doc/api.md
     [ ] Command-Line Tool
+    [ ] Identify and flag invalid messages
     [ ] Randomly Generated Tests
 
 ## 2. Example Applications
 
-    [ ] Crowdfunding
+    [ ] Scuttleflotila Crowdfunding
     [ ] Small Shop Fidelity Program
     [ ] Community Supported Agriculture
 

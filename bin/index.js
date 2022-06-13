@@ -29,7 +29,7 @@ if (command === 'help') {
 
 var COMMANDS = Object.keys(api) 
 if (args._.length >= 2 && COMMANDS.indexOf(args._[2]) < 0) {
-  process.stderr.write("ssb-coin: invalid command '" + args._[2] + "'")
+  process.stderr.write("ssb-tokens: invalid command '" + args._[2] + "'")
   process.exit(1)
 }
 

@@ -7,7 +7,8 @@
     "ssb-tokens": "./bin/index.js"
   },
   "scripts": {
-    "test": "node test/index.js"
+    "test": "node test/index.js",
+    "debug-test": "DEBUG='ssb-tokens ssb-tokens:test' node test/index.js"
   },
   "repository": {
     "type": "git",
@@ -26,13 +27,17 @@
   },
   "homepage": "https://github.com/elavoie/ssb-tokens",
   "dependencies": {
-    "minimist": "^1.2.0",
-    "ssb-ref": "^2.13.9"
+    "crypto": "^1.0.1",
+    "minimist": "^1.2.6",
+    "ssb-ref": "^2.16.0",
+    "pull-stream": "^3.6.14",
+    "debug": "^4.3.4"
   },
   "devDependencies": {
     "ssb-identities": "^2.1.1",
     "ssb-keys": "^7.2.2",
-    "ssb-server": "^15.2.0",
-    "tape": "^5.0.0"
+    "ssb-server": "^15.3.0",
+    "ssb-query": "^2.4.5",
+    "tape": "^5.5.3"
   }
 }

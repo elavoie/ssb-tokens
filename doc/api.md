@@ -121,9 +121,9 @@ Optionally, the API of ssb-tokens can be advertised for [ssb-client](https://git
 1. The private key of `owner` is accessible by the running [ssb-server](https://github.com/ssbc/ssb-server).
 2. `ssb`, an [ssb-server](https://github.com/ssbc/ssb-server) or [ssb-client](https://github.com/ssbc/ssb-client) instance,  is correctly running.
 
-### ssb.tokens.create(number, currency, ?options, cb(err,msg))
+### ssb.tokens.create(amount, currency, ?options, cb(err,msg))
 
-Create `number` (Number) of type `currency` (String), with `currency` at most 30 characters long.
+Create `amount` (Number) of type `currency` (String), with `currency` at most 30 characters long.
 
 The callback should have signature `cb(err, msg)`: `err` is `null` if the operation was successful or `Error` (truthy) otherwise, and `msg` is the message saved in the log, augmented with its assigned `id` ([SSB Message ID](#ssb-message-id)), and its `owner` ([SSB Log ID](#ssb-log-id)).
 
@@ -133,7 +133,7 @@ Options can be the following:
 {
     owner: SSB_LOG_ID || null,       // Default: null
     description: SSB_MSG_ID || null,   // Default: null
-    "smallest-unit": Number            // Default: 0.01
+    "smallest-unit": Number            // Default: 1
 }
 ```
 
@@ -150,24 +150,32 @@ where:
 ```json
 {
     "type": "tokens/<version>/create", 
-    "number": number,
-    "currency": currency,
-    "description": options.description,
-    "smallest-unit": options["smallest-unit"]
+    "amount": amount, (Number)
+    "currency": currency, (String)
+    "description": options.description, (String || null)
+    "smallest-unit": options["smallest-unit"] (Number),
+    "token-hash": hash(currency + options.description + options["smallest-unit"]) (String)
 }
 ```
 
-The previous message is automatically assigned an`id` ([SSB Message ID](#ssb-message-id)) by SSB for publication in `owner` ([SSB Log ID](#ssb-log-id))'s log.
+The previous message is automatically assigned an `id` ([SSB Message ID](#ssb-message-id)) by SSB for publication in `owner` ([SSB Log ID](#ssb-log-id))'s log.
 
-### ssb.tokens.give(tokens, recipient, ?options, cb(err, msg))
+### ssb.tokens.give(source, recipient, ?options, cb(err, msg))
 
-Give (owned) `tokens` to `recipient` ([SSB Log ID](#ssb-log-id)). 
+Give (owned) tokens from `source` to `recipient` ([SSB Log ID](#ssb-log-id)). 
 
-`tokens` can be one of the followings:
+`source` can be one of the followings:
 
-* `operation-id` ([SSB Message ID](#ssb-message-id)): gives all the remaining [*unspent* tokens](#unspent-tokens) from `operation-id`. 
+* `operation-id` ([SSB Message ID](#ssb-message-id)): gives all the remaining [*unspent* tokens](#unspent-tokens) from `id`. 
 
-* `[ [number, operation-id], ...]` :  gives `number` tokens from `operation-id` for each pair in the list. 
+* `{ amount: Number, id: operation-id }`: gives `amount` from `id`.
+
+* `{ 
+     amount: Number, 
+     "token-hash": String 
+   }`: gives `amount` from earliest received tokens that match `token-hash`.
+
+* `[ source, ... ]` :  gives tokens from each source in the list.
 
 The callback should have signature `cb(err, msg)`: `err` is `null` if the operation was successful or `Error` (truthy) otherwise, and `msg` is the message saved in the log, augmented with its assigned `id` ([SSB Message ID](#ssb-message-id)), and its `owner` ([SSB Log ID](#ssb-log-id)).
 
@@ -194,7 +202,8 @@ The total number of [*unspent* tokens](#spent-tokens), prior to this operation, 
 Let `roots` be the [*root* operations](#root-operations) of `tokens`:
 
 1. All `roots` must have the same `currency`, `description`, and `smallest-unit`.
-2. `number` is an integer multiple of `roots['smallest-unit']`.
+2. `amount` is an integer multiple of `roots['smallest-unit']`.
+3. All operations must have the same `currency` and `description`.
 
 #### => Log Effect(s)
 
@@ -203,8 +212,10 @@ Let `roots` be the [*root* operations](#root-operations) of `tokens`:
 ```json
 {
     "type": "tokens/<version>/give",
-    "source": [ [ number, operation-id ], ... ],
-    "recipient": SSB_OWNER_ID
+    "token-hash": String,
+    "source": [ { amount: Number, id: operation-id }, ... ],
+    "amount": Number,
+    "recipient": SSB_LOG_ID
 }
 ```
 
@@ -227,14 +238,12 @@ Options can be the following:
 ```js
 {
     owner: SSB_LOG_ID || null,          // Default: ".ssb/secret"
-    description:  SSB_MSG_ID || null    // Default: null
 }
 ```
 
 where:
 
 - `owner`: is the [SSB ID](./help/ssb.txt) or [SSB Keys](https://github.com/ssbc/ssb-keys) that is giving the tokens.
-- `description`: is a [SSB Message ID](./help/ssb.txt) that describes the purpose of the burn.
 
 #### Pre-conditions
 
@@ -250,12 +259,13 @@ Let `roots` be the *roots* of `tokens`:
 ```json
 {
     "type": "tokens/<version>/burn",
-    "source": [ operation_id, ... ],
-    "description": options.description
+    "token-hash": String,
+    "source": [ [amount, operation_id], ... ],
+    "amount": Number
 }
 ```
 
-The previous message is automatically assigned an `id` ([SSB Message ID](#ssb-message-id)) by SSB for publication in `owner` ([SSB Log ID](#ssb-log-id))'s log.
+in which each source `amount` is the `unspent` amount for each listed `operation`, and the operation `amount` is the total amount for all operations listed.  The previous message is automatically assigned an `id` ([SSB Message ID](#ssb-message-id)) by SSB for publication in `owner` ([SSB Log ID](#ssb-log-id))'s log.
 
 ## Meta-Operations
 
@@ -339,68 +349,70 @@ The previous message is automatically assigned an `id` ([SSB Message ID](#ssb-me
 
 1. `ssb`, an [ssb-server](https://github.com/ssbc/ssb-server) or [ssb-client](https://github.com/ssbc/ssb-client) instance, is correctly running.
 
-### ssb.tokens.list(filter, owner, ?options, cb)
+### ssb.tokens.list(?filter, ?options, cb(err,tokens))
 
-List tokens owned by `owner` that match `filter`.
+List the current state of tokens that match `filter`.
 
-`filter` can be one of the followings:
-
-- `root-id` ([SSB Message ID](./help/ssb.txt)): show operations whose root match `root-id`.
-
-- `root-currency` (String): show operations whose *root*s' `currency` match `root-currency`.
-
-- `root-description` ([SSB Message ID](./help/ssb.txt)): show only operations whose *roots'* `description` match `root-description`.
-
-- `null`: show all operations.
-
-`owner` can be one of the followings:
-
-- `SSB_ID`: show operations of tokens owned by [SSB ID](./help/ssb.txt).
-
-- `null`: show operations of tokens owned by anyone.
-
-The callback should have signature `cb(err, tokens)`. `err` is `null` if the operation was successful or `Error` (truthy) otherwise. `tokens` is `[token, ...]` that match `filter` and `owner`. Each `token` has the following properties:
-
+`filter` can have the following options to include only tokens that match:
 ```javascript
 {
-    owner: SSB_ID, 
+    owner: SSB_LOG_ID,
     currency: String,
-    balance: Number,
-    description: SSB_MSG_ID || null,
-    received: [ operation, ... ],
-    given: [ operation, ... ],
-    burnt: [ operation, ... ]
-}  
+    description: SSB_MSG_ID,
+    "smallest-unit": Number,
+    "token-hash": String
+}
 ```
-
-Each [operation](#operation) has the following properties added:
-```javascript
-    id: operation_id,
-    unspent: Number,
-    balance: Number,
-    flags: [ label, ... ]  
-```
-
-Each `token` maintains the following invariants:
-```javascript
-    sum = (a,b) => a+b
-    balance = received.map( (op) => op.unspent ).reduce(sum)
-    balance = received.concat(given).concat(burnt)
-                    .map( (op) => op.balance ).reduce(sum)
-```
-
-Moreover:
-    1. All operations in `given` and `burnt` have operations in `received` as `source`. 
-    2. Operations within `received` and `given` are sorted in topological order, i.e. operations that depend on earlier operations appear after.
- 
 
 `options` can be the following:
 
 ```js
 {
+    stateless: Boolean  // If true, omit all properties related to state 
 }
 ```
 
+The callback should have signature `cb(err, tokens)`. `err` is `null` if the operation was successful or `Error` (truthy) otherwise. `tokens` is `[token, ...]` that match `filter`. Each `token` has the following properties:
+
+```javascript
+{
+    currency: String,
+    description: SSB_MSG_ID || null,
+    "smallest-unit": Number,
+    "token-hash": String,
+
+    // (Omitted when options.stateless=true)
+    owner: SSB_LOG_ID, 
+    balance: Number,
+    created: [ operation, ... ],
+    received: [ operation, ... ],
+    given: [ operation, ... ],
+    burnt: [ operation, ... ],
+    all: { operation_id: operation, ... }
+}  
+```
+
+Each [operation](#operation) has the following properties added:
+```javascript
+    id: SSB_MSG_ID,
+    author: SSB_LOG_ID,  
+    unspent: Number   // Remaining amount available for spending
+```
+
+Each `token` maintains the following invariants, given `sum = (a,b) => a+b`:
+```javascript
+    unspent =  created.map( (op) => op.unspent ).reduce(sum) +
+              received.map( (op) => op.unspent ).reduce(sum)
+
+    balance =  created.map( (op) =>  op.amount ).reduce(sum) +
+              received.map( (op) =>  op.amount ).reduce(sum) +
+                 given.map( (op) => -op.amount ).reduce(sum) +
+                 burnt.map( (op) => -op.amount ).reduce(sum)
+```
+
+Moreover:
+    1. All operations in `given` and `burnt` have operations in `created` and `received` as `source`. 
+    2. Operations within `created`, `received` and `given` are sorted in topological order, i.e. operations that depend on earlier operations appear after.
 
 #### => Log Effect(s): None
 
