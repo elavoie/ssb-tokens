@@ -203,7 +203,7 @@ module.exports = function run (ssb) {
     })
   })
 
-  tape('give to oneself', function (t) {
+  tape('list gift to oneself', function (t) {
     var creator = null
     newID().then( (id) => create(2, "Own tokens", { owner: creator=id }) )
     .then( (op) => log(op) || give({ amount: 1, id: op.id }, op.owner, { owner: creator }) ) 

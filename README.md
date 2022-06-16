@@ -239,3 +239,7 @@ to buy back volunteer credits from the oldest to the newest.
     ssb-tokens give 10 "USD" @volunteer
     ssb-tokens burn %redeemed_hour
 ```
+
+# Related Work
+
+1. EuroToken: https://repository.tudelft.nl/islandora/object/uuid%3A132faae8-6883-454f-a8ce-94735340dce9?collection=education

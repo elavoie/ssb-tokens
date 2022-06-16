@@ -175,7 +175,7 @@ Give (owned) tokens from `source` to `recipient` ([SSB Log ID](#ssb-log-id)).
      "token-hash": String 
    }`: gives `amount` from earliest received tokens that match `token-hash`.
 
-* `[ source, ... ]` :  gives tokens from each source in the list.
+* `[ source, ... ]` :  gives tokens from each source in the list. Each `source` should have an `amount` and `operation-id`.
 
 The callback should have signature `cb(err, msg)`: `err` is `null` if the operation was successful or `Error` (truthy) otherwise, and `msg` is the message saved in the log, augmented with its assigned `id` ([SSB Message ID](#ssb-message-id)), and its `owner` ([SSB Log ID](#ssb-log-id)).
 
@@ -201,9 +201,8 @@ The total number of [*unspent* tokens](#spent-tokens), prior to this operation, 
 
 Let `roots` be the [*root* operations](#root-operations) of `tokens`:
 
-1. All `roots` must have the same `currency`, `description`, and `smallest-unit`.
+1. All `roots` must have the same `token-hash`.
 2. `amount` is an integer multiple of `roots['smallest-unit']`.
-3. All operations must have the same `currency` and `description`.
 
 #### => Log Effect(s)
 
@@ -212,7 +211,7 @@ Let `roots` be the [*root* operations](#root-operations) of `tokens`:
 ```json
 {
     "type": "tokens/<version>/give",
-    "token-hash": String,
+    "token-hash": String, // Same as operations listed in source
     "source": [ { amount: Number, id: operation-id }, ... ],
     "amount": Number,
     "recipient": SSB_LOG_ID
@@ -221,15 +220,15 @@ Let `roots` be the [*root* operations](#root-operations) of `tokens`:
 
 The previous message is automatically assigned an `id` ([SSB Message ID](#ssb-message-id)) by SSB for publication in `owner` ([SSB Log ID](#ssb-log-id))'s log.
 
-### ssb.tokens.burn(tokens, ?options, cb)
+### ssb.tokens.burn(source, ?options, cb)
 
 Burn (owned) `tokens`.
 
-`tokens` can be one of the followings:
+`source` can be one of the followings:
 
 - `operation-id`
 
-- `[ operation-id, ...]` (a list of [Operation ID](#operation-identifier))
+- `[ operation-id, ... ]` (a list of [Operation ID](#operation-identifier))
 
 The callback should have signature `cb(err)`.  `err` is `null` if the operation was successful or `Error` (truthy) otherwise.
 
@@ -247,10 +246,13 @@ where:
 
 #### Pre-conditions
 
-Let `roots` be the *roots* of `tokens`:
+Let `roots` be the *roots* of `source`:
 
-1. All `roots` must have the same `currency`, `description`, and `smallest-unit`.
-2. Every previous operation reachable from `tokens` must be valid, i.e. fulfill its pre-conditions.
+1. All `roots` must have the same `token-hash`.
+2. All operations should not be the source of any give operation, i.e. the full amount of the source
+   should be available to burn.
+
+To burn a subset of the available amount from source, first give to oneself a partial amount then burn the self-given tokens.
 
 #### => Log Effect(s)
 
@@ -259,13 +261,13 @@ Let `roots` be the *roots* of `tokens`:
 ```json
 {
     "type": "tokens/<version>/burn",
-    "token-hash": String,
-    "source": [ [amount, operation_id], ... ],
+    "token-hash": String, // Same as operations listed in source
+    "source": [ operation_id, ... ],
     "amount": Number
 }
 ```
 
-in which each source `amount` is the `unspent` amount for each listed `operation`, and the operation `amount` is the total amount for all operations listed.  The previous message is automatically assigned an `id` ([SSB Message ID](#ssb-message-id)) by SSB for publication in `owner` ([SSB Log ID](#ssb-log-id))'s log.
+in which each source `amount` is the total amount for each listed `operation`, and the operation `amount` is the total amount for all operations listed.  The previous message is automatically assigned an `id` ([SSB Message ID](#ssb-message-id)) by SSB for publication in `owner` ([SSB Log ID](#ssb-log-id))'s log.
 
 ## Meta-Operations
 
@@ -274,11 +276,11 @@ in which each source `amount` is the `unspent` amount for each listed `operation
 1. The private key of `witness` ([SSB Log ID](#ssb-log-id)) is accessible by the running [ssb-server](https://github.com/ssbc/ssb-server).
 2. `ssb`, an [ssb-server](https://github.com/ssbc/ssb-server) or [ssb-client](https://github.com/ssbc/ssb-client) instance, is correctly running.
 
-### ssb.tokens.flag(tokens, label, ?options, cb)
+### ssb.tokens.flag(operations, label, ?options, cb)
 
 Flag `tokens` with `label`.
 
-`tokens` is an [Operation ID](#operation-identifier).`label` is a String of 50 characters or less. The meaning of `label` is up to users/applications.
+`operations` is a list of [Operation ID](#operation-identifier).`label` is a String of 50 characters or less. The meaning of `label` is up to users/applications.
 
 `options` can be the following:
 
@@ -302,7 +304,7 @@ where:
 ```json
 {
     "type": "tokens/<version>/flag",
-    "source": OPERATION_ID,
+    "source": operations,
     "label": label,
     "description": options.description
 }
@@ -310,11 +312,11 @@ where:
 
 The previous message is automatically assigned an `id` ([SSB Message ID](#ssb-message-id)) by SSB for publication in `witness` ([SSB Log ID](#ssb-log-id))'s log.
 
-### ssb.tokens.unflag(tokens, label, options?, cb)
+### ssb.tokens.unflag(flag, options?, cb)
 
 Remove previously assigned flag `label` from `tokens`.
 
-`tokens` is an [Operation ID](#operation-identifier).`label` is a String of 50 characters or less. The meaning of `label` is up to users/applications.
+`flag` is the [Operation ID](#operation-identifier) of the previous flag message to undo.
 
 `options` can be the following:
 
@@ -326,7 +328,7 @@ Remove previously assigned flag `label` from `tokens`.
 
 where:
 
-- `witness`: is the [SSB_Log ID](#ssb-log-id) that is unflagging the tokens.
+- `witness`: is the [SSB_Log ID](#ssb-log-id) that is unflagging the operations.
 
 #### => Log Effect(s):
 
@@ -335,9 +337,7 @@ where:
 ```json
 {
     "type": "tokens/<version>/unflag",
-    "source": OPERATION_ID,
-    "flag": FLAG_ID,
-    "label": label
+    "flag": SSB_MSG_ID
 }
 ```
 
@@ -349,7 +349,7 @@ The previous message is automatically assigned an `id` ([SSB Message ID](#ssb-me
 
 1. `ssb`, an [ssb-server](https://github.com/ssbc/ssb-server) or [ssb-client](https://github.com/ssbc/ssb-client) instance, is correctly running.
 
-### ssb.tokens.list(?filter, ?options, cb(err,tokens))
+### ssb.tokens.list(filter, ?options, cb(err,tokens))
 
 List the current state of tokens that match `filter`.
 
@@ -401,18 +401,17 @@ Each [operation](#operation) has the following properties added:
 
 Each `token` maintains the following invariants, given `sum = (a,b) => a+b`:
 ```javascript
-    balance =  created.map( (op) => op.unspent ).reduce(sum) +
-              received.map( (op) => op.unspent ).reduce(sum)
+    balance =  created.map( (op) => op.unspent ).reduce(sum, 0) +
+              received.map( (op) => op.unspent ).reduce(sum, 0)
 
-    balance =  created.map( (op) =>  op.amount ).reduce(sum) +
-              received.map( (op) =>  op.amount ).reduce(sum) +
-                 given.map( (op) => -op.amount ).reduce(sum) +
-                 burnt.map( (op) => -op.amount ).reduce(sum)
+    balance =  created.map( (op) =>  op.amount ).reduce(sum, 0) +
+              received.map( (op) =>  op.amount ).reduce(sum, 0) +
+                 given.map( (op) => -op.amount ).reduce(sum, 0) +
+                 burnt.map( (op) => -op.amount ).reduce(sum, 0)
 ```
 
 Moreover:
     1. All operations in `given` and `burnt` have operations in `created` and `received` as `source`. 
-    2. Operations within `created`, `received` and `given` are sorted in topological order, i.e. operations that depend on earlier operations appear after.
 
 #### => Log Effect(s): None
 

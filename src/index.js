@@ -29,19 +29,23 @@ function isOp (op) {
 function tokenProperties (ssb, tokenHash, cb) {
   pull(
     ssb.query.read({ 
-      query: { "$filter": { value: { content: { type: createType, "token-hash": tokenHash } } } },
+      query: [{ "$filter": { value: { content: { type: createType, "token-hash": tokenHash } } } }],
       limit: 1
     }),
     pull.collect( (err, ary) => {
       if (err) cb(err)
       else {
-        var tok = ary[0].value.content
-        cb(null, { 
-          currency: tok.currency,
-          description: tok.description,
-          "smallest-unit": tok["smallest-unit"],
-          "token-hash": tok["token-hash"]
-        })
+        if (ary.length < 1) {
+          cb(new Error("Token hash '" + tokenHash + "' not found."))
+        } else {
+          var tok = ary[0].value.content
+          cb(null, { 
+            currency: tok.currency,
+            description: tok.description,
+            "smallest-unit": tok["smallest-unit"],
+            "token-hash": tok["token-hash"]
+          })
+        }
       }
     } )
   )
@@ -105,13 +109,6 @@ function sourceEnoughUnspent (token, source, cb) {
   }
   // 4. Replace 'null' in sources by the unspent tokens of
   //    of the corresponding operation
-  log(token)
-  log(source)
-  source.sort((a,b) => {
-    if (a.id && !b.id) return -1
-    else if (!a.id && b.id) return 1
-    else return 0
-  })
   var filledSource = []
   for (var i = 0; i < source.length; ++i) {
     var s = source[i]
@@ -119,17 +116,42 @@ function sourceEnoughUnspent (token, source, cb) {
       if (typeof s.amount === "number" && 
           token.all[s.id].unspent >= s.amount) {
         token.all[s.id].unspent -= s.amount
+        token.balance -= s.amount
         filledSource.push(s)
-      } else if (s.amount === null) {
+      } else if (s.amount === null || 
+                 (typeof s.amount === 'undefined')) {
         var amount = token.all[s.id].unspent
         token.all[s.id].unspent -= amount
-        filledSource.push({ id: s.id, amount: amount })
+        token.balance -= amount
+        filledSource.push({ amount: amount, id: s.id })
       }
     } else if (s['token-hash']) {
-      // TODO: Implement
-      return cb(new Error('Unimplemented token-hash amount computation'))
+      if (source.length > 1) {
+        return cb(new Error('Invalid source, "token-hash" can only be used on a single source.'))
+      } else if ((typeof s.amount === "number" &&
+          token.balance < s.amount) ||
+          token.balance === 0) {
+        return cb(new Error('Insufficient unspent funds from owner ' + token.owner + 
+                            ' to give ' + JSON.stringify(s)))
+      }
+
+      var amount = ((typeof s.amount === 'undefined') || 
+                     s.amount === null) ? token.balance : s.amount
+      while (amount > 0) {
+        var op = next()
+        if (op === null) {
+          return cb(new Error('Internal error: no operation left to create a source'))
+        } else if (op.unspent > 0) {
+          var a = Math.min(op.unspent, amount)
+          op.unspent -= a
+          token.balance -= a
+          amount -= a
+          filledSource.push({ amount: a, id: op.id }) 
+        }
+      }
     } else {
-      return cb(new Error('Insufficient unspent funds remaining to give ' + JSON.stringify(source)))
+        return cb(new Error('Internal error, source ' + JSON.stringify(s) + 
+                            ' has no id or token-hash.'))
     }
   }
 
@@ -237,21 +259,25 @@ function give (ssb,api)  {
   // 4. Unspent tokens are greater than numbers given from each source
   // 5. Replaces 'null' with the unspent number of tokens
   function validate (owner, source, recipient, cb) {
-    log('tokens.give validate')
     var tokenHash = null
     var smallestUnit = null
-    whoami().then((logId) => { owner = owner || logId })
+    whoami().then((log) => { owner = owner || log.id })
     .then(() => consistentTokenHashesP(source)) // Prop 1
     .then((_tokenHash) => tokenPropertiesP(tokenHash = _tokenHash))
     .then((props) => sourceIsMultipleP(props["smallest-unit"], source)) // Prop 2
     .then(() => list({ owner: owner, "token-hash": tokenHash })) // Prop 3
-    .then((tokens) => sourceEnoughUnspentP(tokens[0], source) )
+    //.then((tokens) => { console.log(tokenHash); console.log(owner); console.log(tokens); return tokens })
+    .then((tokens) => { 
+      if (tokens.length > 0) return sourceEnoughUnspentP(tokens[0], source) 
+      else throw new Error("No token found for owner " + owner + 
+                            " with source " + JSON.stringify(source))
+    })
     .then((source) => {
       cb(null, {
         type: giveType,
         "token-hash": tokenHash,
         source: source,
-        amount: source.map((s) => s.amount).reduce(sum),
+        amount: source.map((s) => s.amount).reduce(sum, 0),
         recipient: recipient
       })
     })
@@ -275,9 +301,11 @@ function give (ssb,api)  {
       cb(null, msg)
     }
 
-    function checkObject(obj) {
+    function checkObject(s) {
       if (typeof s === 'object') {
-        if (typeof s.amount !== 'number') {
+        if (typeof s.amount !== 'undefined' && 
+            typeof s.amount !== 'number' &&
+            typeof s.amount !== 'null') {
           return new Error("tokens.give: Invalid source amount, expected number instead of '" + 
                             typeof s.amount + "'.")
         }
@@ -300,7 +328,8 @@ function give (ssb,api)  {
           return new Error("tokens.give: Invalid source, expected either property 'id' or 'token-hash'.")
         }
         return null
-      } else return null
+      } else return new Error("tokens.give: Invalid source, expected object instead of " + 
+                               typeof source + ".")
     }
 
     // Type and Syntactic Validation
@@ -310,10 +339,10 @@ function give (ssb,api)  {
     }
     if (typeof source === 'string') {
       if (!ref.isMsgId(source)) {
-        return cb(new Error("tokens.give: Invalid tokens reference, expected SSB Message ID instead of '" + tokens 
-                            + "'."))   
+        return cb(new Error("tokens.give: Invalid tokens reference, " + 
+                            "expected SSB Message ID instead of '" + source + "'."))   
       }
-      sources = [ { amount: null, id: source } ] // 'null' will be replaced the amount remaining during validation
+      source = [ { amount: null, id: source } ] // 'null' will be replaced the amount remaining during validation
     } else if (Array.prototype.isPrototypeOf(source) && source.length > 0) {
       for (var i = 0; i < source.length; ++i) {
         var s = source[i]
@@ -608,14 +637,49 @@ function list (ssb,api) {
                       })
                       tokenList = Object.values(tokenHashes)
                     } else {
-                      tokenList.forEach((token) => {
-                        log(token)
+                      // Check invariants and adjust format
+                      for (var i = 0; i < tokenList.length; ++i) {
+                        var token = tokenList[i]
+
+                        var _created = token.created
+                        var _received = token.received
+
                         token.created = Object.values(token.created)
                         token.received = Object.values(token.received)
                         token.given = Object.values(token.given)
                         token.burnt = Object.values(token.burnt)
                         updateUnspent(ops, token)
-                      })
+
+                        var unspent = token.created.concat(token.received)
+                                      .map( (op) => op.unspent ).reduce(sum, 0)
+                        if (unspent !== token.balance) {
+                          return cb(new Error("Sum of unspent tokens is " + unspent + 
+                                              " but should be equal to " + token.balance))
+                        }
+                        var balance = token.created.concat(token.received)
+                                      .map( (op) => op.amount ).reduce(sum, 0) +
+                                      token.given.concat(token.burnt)
+                                      .map( (op) => -op.amount).reduce(sum, 0)
+
+                        if (balance !== token.balance) {
+                          return cb(new Error("Sum of amounts is " + balance +
+                                              " but should be equal to " + token.balance))
+                        }
+                        var sourced = token.given.reduce(
+                                        (acc, op) => op.source.reduce( 
+                                            (acc, s) => acc && ((s.id in _created) || (s.id in _received)),
+                                            acc),
+                                        true) &&
+                                      token.burnt.reduce(
+                                        (acc, op) => op.source.reduce(
+                                            (acc, s) => acc && ((s in _created) || (s in _received)),
+                                            acc),
+                                        true)
+                        if (!sourced) {
+                          return cb(new Error("Some operations in token.given and token.burnt " +
+                                              "are not in token.created and token.received."))
+                        }
+                      }
                     }
                     cb(errors(), tokenList)
                   }
@@ -678,6 +742,8 @@ function burn (ssb,api)  {
   var list = util.promisify(api.list)
 
   return function (source, options, cb) {
+    cb = cb || options
+
     function done (err, msg) {
       if (err) return cb(err)
       var op = msg.value.content
@@ -688,26 +754,68 @@ function burn (ssb,api)  {
     
     if (typeof source === "string" && ref.isMsgId(source)) {
       source = [ source ]
+    } else if (Array.prototype.isPrototypeOf(source)) {
+      if (source.length < 1) {
+        return cb(new Error("Empty source, expected an array " +
+                            "of operation ids (SSB Message IDs)."))
+      }
+      for (var i = 0; i < source.length; ++i) {
+        if (typeof source[i] !== "string" || 
+            !ref.isMsgId(source[i])) {
+          return cb(new Error("Invalid operation id, expected an SSB Message ID, " +
+                              " of a create or give operation."))
+        }
+      }
+    } else {
+      return cb(new Error("Invalid source, expected one, or an array of, operation id " +
+                          "(SSB Message ID) of create or give operation."))
     }
 
-    log(source)
+    if (typeof options === "function") {
+      options = {}   
+    }
 
     var tokenHash = null
     var amount = 0
     var sourceIds = {}
+    function inSourceIds (op) {
+      var source = op.source
+      for (var i = 0; i < source.length; ++i) {
+        if (source[i] in sourceIds || 
+            source[i].id in sourceIds)
+          return true
+      }
+      return false
+    }
+
     source.forEach((s) => sourceIds[s] = true)
-    whoami().then((logId) => { options.owner = options.owner || logId })
+    whoami().then((log) => { options.owner = options.owner || log.id })
     consistentTokenHashesP(source.map((s) => ({ amount: null, id: s }) ))
     .then((_tokenHash) => list({ owner: options.owner, "token-hash": tokenHash=_tokenHash }))
     .then((tokens) => {
-      log(sourceIds)
-      log(source)
+      if (tokens.length < 1) {
+        throw new Error("Invalid source(s) '" + JSON.stringify(source) + 
+                        "', inexistant or not owned by " + options.owner + ".")
+      }
       amount=tokens[0].created.concat(tokens[0].received)
             .filter((op) => sourceIds.hasOwnProperty(op.id))
             .map((op) => op.amount)
-            .reduce(sum) 
+            .reduce(sum, 0) 
+
+      var tok = tokens[0]
+      source.forEach((s) => {
+        var nonVirgin = null 
+        if ((nonVirgin=tok.given.filter(inSourceIds)).length > 0) {
+          throw new Error("Invalid source(s) " + JSON.stringify(s) + 
+                          ", already partially or completely given.")
+        }
+        
+        if ((nonVirgin=tok.burnt.filter(inSourceIds)).length > 0) {
+          throw new Error("Invalid source(s) " + JSON.stringify(s) + 
+                          ", already burnt.")
+        }
+      })
     })
-    // TODO check that tokens from all operation ids have not been partially given already
     .then(() => {
       var msg = {
         type: burnType,

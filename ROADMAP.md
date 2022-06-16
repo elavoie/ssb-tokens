@@ -3,10 +3,14 @@
 ## 1. Create, Give, Burn, List, Trace, and Flag tokens
 
     [ ] Libraries
-    [ ] - Add missing syntactic validation to burn
-    [ ] - Add validation of dependencies to all operations
+    [x] - Add missing syntactic validation to burn
+    [x] - List test invariants before returning token
+    [ ] - Test full API for create, give, burn, list
+    [ ] - Add transitive validation of dependencies to all operations
+    [ ]   - Trigger with options.validate=true
     [ ] - Change op.owner to op.author for output of create,give,burn for consistency with list
     [ ]   - Update doc/api.md
+    [ ] - Add separate 'unit' property from 'currency'
     [ ] - 2nd pass on implementation for clarity
     [ ] Command-Line Tool
     [ ]  - Ensure one-to-one mapping with API
@@ -23,8 +27,8 @@
 
     [ ] Application Developer
         [ ] Example Scenarios
-        [ ] Programmer API
-        [ ] Clear and Concise Semantics of Operations for API
+        [x] Programmer API
+        [x] Clear and Concise Semantics of Operations for API
         [ ] Handling Errors
     [ ] Library Developer/Maintainer
         [ ] Message Schemas

@@ -22,9 +22,9 @@ var tests = [
   require('./help.js'),
   require('./create.js'),
   require('./give.js'),
+  require('./burn.js'),
   require('./list.js'),
   require('./applications.js')
-// TODO: Test everything else described in API 
 ]
 tests.forEach(function (t) { 
   t(ssb) 
