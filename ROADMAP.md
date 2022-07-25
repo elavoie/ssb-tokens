@@ -5,7 +5,10 @@
     [ ] Libraries
     [x] - Add missing syntactic validation to burn
     [x] - List test invariants before returning token
-    [ ] - Test full API for create, give, burn, list
+    [x] - Test full API for create, give, burn, list
+    [ ] - Update Message schema to use "sources" instead of "source"
+    [ ] - Update Message schema to use "tokenHash" instead of "token-hash"
+    [ ] - Update TokenHash to also include the owner
     [ ] - Add transitive validation of dependencies to all operations
     [ ]   - Trigger with options.validate=true
     [ ] - Change op.owner to op.author for output of create,give,burn for consistency with list

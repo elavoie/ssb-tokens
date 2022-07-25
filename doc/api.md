@@ -80,7 +80,10 @@ In practice, this means the remaining (positive) balance between the total numbe
     var Server = require('ssb-server')
     var config = require('ssb-config')
 
-    // add ssb-tokens and dependencies
+    // add dependencies (if not already present)
+    Server.use(require('ssb-identities'))
+    Server.use(require('ssb-query'))
+    // add ssb-tokens
     Server.use(require('ssb-tokens'))
 
     // create the server 
@@ -249,7 +252,7 @@ where:
 Let `roots` be the *roots* of `source`:
 
 1. All `roots` must have the same `token-hash`.
-2. All operations should not be the source of any give operation, i.e. the full amount of the source
+2. All operations should not be the source of any give or burn operation, i.e. the full amount of the source
    should be available to burn.
 
 To burn a subset of the available amount from source, first give to oneself a partial amount then burn the self-given tokens.
@@ -267,7 +270,7 @@ To burn a subset of the available amount from source, first give to oneself a pa
 }
 ```
 
-in which each source `amount` is the total amount for each listed `operation`, and the operation `amount` is the total amount for all operations listed.  The previous message is automatically assigned an `id` ([SSB Message ID](#ssb-message-id)) by SSB for publication in `owner` ([SSB Log ID](#ssb-log-id))'s log.
+ in which the operation's `amount` is the total amount for all operations listed.  The previous message is automatically assigned an `id` ([SSB Message ID](#ssb-message-id)) by SSB for publication in `owner` ([SSB Log ID](#ssb-log-id))'s log.
 
 ## Meta-Operations
 
@@ -432,10 +435,25 @@ The callback should have signature `cb(err, dag, operations)`. `err` is `null` i
     id: operation_id,
     valid: true || Error(msg),
     unspent: number,
-    flags: [ label, ... ]
 }
 ```
 
 where `operation_id` is the corresponding [Operation ID](#operation-identifier), `valid` is `true` if all *ancestors* are valid and the operation fulfills its pre-conditions, `unspent` is the number of unspent tokens, and `flags` are the flags on this operation.
+
+#### => Log Effect(s): None
+
+### ssb.tokens.validate(source, ?options, cb)
+
+Transitively check whether source is valid.
+
+`source` can be one of the followings:
+
+- `operation-id` ([SSB Message ID](./help/ssb.txt)).
+
+- `{ amount: Number, id: operation-id }` ([SSB_Message_ID](./help/ssb.txt)): 
+
+- `[ source, ...]` (a list of [Operation ID](#operation-identifier)) formatted as above.
+
+The callback should have signature `cb(err)`. `err` is `null` if the operation was successful or `Error` (truthy) otherwise. If some source operations are invalid, e.g. because of the message format is incorrect or insufficient funds are available, the invalid operations will be set on `err.invalid = [ operation ]`. 
 
 #### => Log Effect(s): None

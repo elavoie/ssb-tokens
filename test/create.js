@@ -2,7 +2,12 @@ var tape = require('tape')
 var meta = require('../')
 
 module.exports = function run (ssb) {
-  tape('create - no callback', function (t) {
+  tape('api.format.create: ', function (t) {
+
+
+  })
+
+  tape('api.create: no callback', function (t) {
     try {
       ssb.tokens.create()
       t.fail('should throw')
@@ -12,28 +17,28 @@ module.exports = function run (ssb) {
     }
   })
 
-  tape('create - invalid token amount', function (t) {
+  tape('api.create: invalid token amount', function (t) {
     ssb.tokens.create('10', 'Shells', function (err, msg) {
       t.true(err)
       t.end()
     })
   })
 
-  tape('create - invalid currency', function (t) {
+  tape('api.create: invalid currency', function (t) {
     ssb.tokens.create(10, 20, function (err, msg) {
       t.true(err)
       t.end()
     })
   })
 
-  tape('create - invalid currency length', function (t) {
+  tape('api.create: invalid currency length', function (t) {
     ssb.tokens.create(10, 'this is a very long currency string', function (err, msg) {
       t.true(err)
       t.end()
     })
   })
 
-  tape('create 10 Shells with no options', function (t) {
+  tape('api.create: 10 Shells with no options', function (t) {
     ssb.tokens.create(10, 'Shells', function (err, msg) {
       t.notOk(err)
       t.ok(msg.id)
@@ -54,7 +59,7 @@ module.exports = function run (ssb) {
     })
   })
 
-  tape('create with different owner', function (t) {
+  tape('api.create: different owner', function (t) {
     ssb.identities.create(function (err, owner) {
       t.notOk(err)
       ssb.tokens.create(10, 'Shells', { owner: owner }, function (err, msg) {
@@ -71,7 +76,7 @@ module.exports = function run (ssb) {
     })
   })
 
-  tape('create with a description', function (t) {
+  tape('api.create: use description', function (t) {
     ssb.publish({ 
       type: 'post', 
       text: '#Shells Tokens\n' +
@@ -92,7 +97,7 @@ module.exports = function run (ssb) {
     })
   })
 
-  tape('create with an invalid description', function (t) {
+  tape('api.create: use an invalid description', function (t) {
     ssb.tokens.create(10, 'Shells', { description: '%malformed_id'}, 
       function (err, msg) {
         t.true(err)
@@ -100,7 +105,7 @@ module.exports = function run (ssb) {
       })
   })
 
-  tape('create with an invalid amount/smallest-unit combination', function (t) {
+  tape('api.create: use an invalid amount/smallest-unit combination', function (t) {
     ssb.tokens.create(10.33, 'Shells', { 'smallest-unit': 0.1 }, 
       function (err, msg) {
         t.true(err)

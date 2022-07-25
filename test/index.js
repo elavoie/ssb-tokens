@@ -23,6 +23,7 @@ var tests = [
   require('./create.js'),
   require('./give.js'),
   require('./burn.js'),
+  require('./validate.js'),
   require('./list.js'),
   require('./applications.js')
 ]

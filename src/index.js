@@ -22,9 +22,176 @@ function isBurn (op) {
   return op.type === burnType
 }
 
+function isFlag (op) {
+  return op.type === flagType
+}
+
+function isUnflag (op) {
+  return op.type === unflagType
+}
+
 function isOp (op) {
   return isCreate(op) || isGive(op) || isBurn(op)
 }
+
+// **************************** formatOp (msg) ***************************
+// Check that `msg` correctly follows the expected operation format for each
+// operation type, synchronously. If format is incorrect, returns an
+// error with the first format check failed. If format is correct, returns
+// null.
+
+function formatCreate (msg) {
+  var op = msg.value.content 
+
+  if (typeof op.amount !== "number") 
+    return new Error("Invalid amount '" + op.amount + "', should be a number")
+
+  if (typeof op.currency !== "string") 
+    return new Error("Invalid currency '" + op.currency + "', should be a string")
+
+  if (typeof op.description !== "string" && op.description !== null)
+    return new Error("Invalid description '" + op.description + "', should be an SSB_MSG_ID or null")
+
+  if (typeof op["smallest-unit"] !== "number")
+    return new Error("Invalid smallest-unit '" + op["smallest-unit"] + "', should be a number")
+
+  if (typeof op["token-hash"] !== "string")
+    return new Error("Invalid token-hash '" + op["token-hash"] + "', should be a string")
+
+  return null
+}
+
+function formatGive (msg) {
+  var op = msg.value.content
+  
+  if (typeof op["token-hash"] !== "string")
+    return new Error("Invalid token-hash '" + op["token-hash"] + "', should be a string")
+
+  if (!Array.prototype.isPrototypeOf(op.source))
+    return new Error("Invalid source '" + JSON.stringify(op.source) + "', should be an array")
+
+  //  The sum of the amounts of give.source.source(s) is equal
+  //  to the give.source.amount
+  var total = 0
+  for (var i = 0; i < op.source.length; ++i) {
+    var s = op.source[i]
+    if (typeof s !== "object") 
+      return new Error("Invalid source[" + i + "]: '" + JSON.stringify(s) + "', should be an object")
+
+    if (typeof s.amount !== "number")
+      return new Error("Invalid source[" + i + "].amount '" + s.amount + "', should be a number")
+
+    if (!ref.isMsgId(s.id))
+      return new Error("Invalid source[" + i + "].id '" + s.id + "', should be an SSB_MSG_ID")
+
+    total += s.amount
+  }
+  if (op.amount !== total) 
+    return new Error("Invalid amount " + op.amount + ", inconsistent with total from sources (" + total + ")")
+
+  if (!ref.isFeed(s.recipient))
+    return new Error("Invalid recipient " + op.recipient + ", should be an SSB_LOG_ID")
+
+  return null
+}
+
+function formatBurn (msg) {
+  var op = msg.value.content
+
+  if (typeof op["token-hash"] !== "string")
+    return new Error("Invalid token-hash '" + op["token-hash"] + "', should be a string")
+
+  if (!Array.prototype.isPrototypeOf(op.source))
+    return new Error("Invalid source '" + JSON.stringify(op.source) + "', should be an array")
+
+  for (var i = 0; i < op.source.length; ++i) {
+    var s = op.source[i]
+    if (typeof s !== "string") 
+      return new Error("Invalid source[" + i + "]: '" + JSON.stringify(s) + "', should be a string")
+  }
+
+  return null
+}
+
+function formatFlag (msg) {
+  throw new Error("Unimplemented")
+}
+
+function formatUnflag (msg) {
+  throw new Error("Unimplemented")
+}
+
+function format (ssb, api) {
+  function checkFormat (msg) {
+    var op = msg.value.content
+    if (isCreate(op)) return formatCreate(msg)
+    else if (isGive(op)) return formatGive(msg)
+    else if (isBurn(op)) return formatBurn(msg)
+    else if (isFlag(op)) return formatFlag(msg)
+    else if (isUnflag(op)) return formatUnflag(msg)
+    else new Error("Invalid ssb-tokens operation with type '" + op.type + "')")
+  }
+
+  checkFormat.create = formatCreate
+  checkFormat.give = formatGive
+  checkFormat.burn = formatBurn
+  checkFormat.flag = formatFlag
+  checkFormat.unflag = formatUnflag
+
+  return checkFormat
+}
+
+
+function requirements (ssb, api) {
+
+  // **************************** reqCreate (msg, cb(err, msg)) ****************
+  // Check that `msg` requirements for <op> are satisfied, asynchronously. If 
+  // all requirements are satisfied, invoke `cb(null, msg)`. Otherwise, invoke
+  // `cb(err, msg)` where `err` is the first requirement error encountered.
+
+  function reqCreate (msg, cb) {
+
+  }
+
+  function reqGive (msg, cb) {
+
+  }
+
+  function reqBurn (msg, cb) {
+
+  }
+
+  function reqFlag (msg, cb) {
+
+  }
+
+  function reqUnflag (msg, cb) {
+
+  }
+
+  function checkReq (msg, cb) {
+    var op = msg.value.content
+
+    if (isCreate(op)) return reqCreate(msg, cb)
+    else if (isGive(op)) return reqGive(msg, cb)
+    else if (isBurn(op)) return reqBurn(msg, cb)
+    else if (isFlag(op)) return reqFlag(msg, cb)
+    else if (isUnflag(op)) return reqUnflag(msg, cb)
+    else return cb(new Error("Requirements: Invalid ssb-tokens operation " + 
+                             "with type '" + op.type + "'"))
+  }
+
+  checkReq.create = reqCreate 
+  checkReq.give = reqGive 
+  checkReq.burn = reqBurn 
+  checkReq.flag = reqFlag 
+  checkReq.unflag = reqUnflag 
+
+  return checkReq
+}
+
+
+
 
 function tokenProperties (ssb, tokenHash, cb) {
   pull(
@@ -157,6 +324,148 @@ function sourceEnoughUnspent (token, source, cb) {
 
   cb(null, filledSource)
 }
+
+function isCorrectSchema (op) { 
+  if (isCreate(op)) {
+    if (typeof op.amount !== "number") 
+      return new Error("Invalid amount '" + op.amount + "', should be a number")
+
+    if (typeof op.currency !== "string") 
+      return new Error("Invalid currency '" + op.currency + "', should be a string")
+
+    if (typeof op.description !== "string" && op.description !== null)
+      return new Error("Invalid description '" + op.description + "', should be an SSB_MSG_ID or null")
+
+    if (typeof op["smallest-unit"] !== "number")
+      return new Error("Invalid smallest-unit '" + op["smallest-unit"] + "', should be a number")
+
+    if (typeof op["token-hash"] !== "string")
+      return new Error("Invalid token-hash '" + op["token-hash"] + "', should be a string")
+
+  } else if (isGive(op)) {
+    if (typeof op["token-hash"] !== "string")
+      return new Error("Invalid token-hash '" + op["token-hash"] + "', should be a string")
+
+    if (!Array.prototype.isPrototypeOf(op.source))
+      return new Error("Invalid source '" + JSON.stringify(op.source) + "', should be an array")
+
+    //  The sum of the amounts of give.source.source(s) is equal
+    //  to the give.source.amount
+    var total = 0
+    for (var i = 0; i < op.source.length; ++i) {
+      var s = op.source[i]
+      if (typeof s !== "object") 
+        return new Error("Invalid source[" + i + "]: '" + JSON.stringify(s) + "', should be an object")
+
+      if (typeof s.amount !== "number")
+        return new Error("Invalid source[" + i + "].amount '" + s.amount + "', should be a number")
+
+      if (!ref.isMsgId(s.id))
+        return new Error("Invalid source[" + i + "].id '" + s.id + "', should be an SSB_MSG_ID")
+
+      total += s.amount
+    }
+    if (op.amount !== total) 
+      return new Error("Invalid amount " + op.amount + ", inconsistent with total from sources (" + total + ")")
+
+    if (!ref.isFeed(s.recipient))
+      return new Error("Invalid recipient " + op.recipient + ", should be an SSB_LOG_ID")
+
+  } else if (isBurn(op)) {
+    if (typeof op["token-hash"] !== "string")
+      return new Error("Invalid token-hash '" + op["token-hash"] + "', should be a string")
+
+    if (!Array.prototype.isPrototypeOf(op.source))
+      return new Error("Invalid source '" + JSON.stringify(op.source) + "', should be an array")
+
+    for (var i = 0; i < op.source.length; ++i) {
+      var s = op.source[i]
+      if (typeof s !== "string") 
+        return new Error("Invalid source[" + i + "]: '" + JSON.stringify(s) + "', should be a string")
+    }
+
+  } else {
+    return new Error("Invalid type " + op.type)
+  }
+}
+
+// Return the "tangle", i.e. directed acyclic graph of sources from operation 'id' to 
+// the roots, as a dictionary { id: { src1: true, ... }, ... }
+function tangle (ssb, ids, cb) {
+  var sources = { }
+  var queue = [ ]
+  var count = 0
+
+  ids.forEach(function (id) {
+    sources[id] = {}
+    queue.push(id)
+  })
+  
+  function next () {
+    var id = queue.pop()
+    ssb.get(id, { meta: true }, function (err, msg) {
+      if (err) return cb(err)
+      count += 1
+
+      var op = msg.value.content 
+      if (!isOp(op)) return cb(new Error("Invalid operation " + JSON.stringify(op)))
+      if (op.source) {
+        op.source.forEach(function (s) {
+          var sId = (typeof sId === "string") ? sId : s.id
+          if (!sources[sId]) {
+            sources[sId] = {}
+            queue.push(sId)
+          }
+
+          sources[id][sId] = true
+        })
+      }
+
+      if (queue.length > 0)
+        next()
+      else if (count === Object.keys(sources).length)
+        return cb(null, sources)
+    })
+  }
+}
+
+// Returns a pull source that streams the ancestors of operation id in reverse
+// topological order, i.e. from roots to the immediate ancestors of id such
+// that all the immediate ancestors of an operation are returned before that
+// operation.
+function ancestors (ssb, ids) {
+  var ancestors = null
+
+  return function source (done, cb) {
+    if (ancestors === null) {
+      tangle(ssb, ids, function (err, sources) {
+        if (err) return cb(err)
+
+        ancestors = Object.keys(sources)
+        if (ancestors.length === 0) 
+          return cb(new Error("Invalid sources " + JSON.stringify(sources)))
+
+        // Equivalent to Scuttlesort
+        ancestors.sort(function (a,b) {
+          if (sources[a].hasOwnProperty(b)) {
+            return -1
+          } else if (sources[b].hasOwnProperty(a)) {
+            return 1
+          } else {
+            return b.localeCompare(a)
+          }
+        })
+
+        return cb(null, ancestors.pop()) 
+      })
+    } else if (ancestors.length > 0) {
+      return cb(null, ancestors.pop()) 
+    } else {
+      return cb(true)
+    }
+  }
+}
+
 
 // All functions that implement the [API](../doc/api.md) are of the form:
 //
@@ -836,6 +1145,141 @@ function burn (ssb,api)  {
   }
 }
 
+function validate (ssb, api) {
+
+  
+  return function validate (source, options, cb) {
+    function checkType (source) {
+      var err = null
+      if (typeof source === "string" &&
+          !ref.isMsgId(source)) {
+        return new Error("Invalid source string, expected an SSB Message ID instead of '" + source + "'.")
+      } else if (Array.prototype.isPrototypeOf(source)) {
+        for (var i = 0; i < source.length; ++i) {
+          if (err=checkType(source[i])) return err
+        }
+        return err
+      } else if (typeof source === "object") {
+        if (!source.id) return new Error("Invalid source '" + JSON.stringify(source) + 
+                                         "', expected 'id' with operation-id.")
+        if (typeof source.id !== "string" ||
+            !ref.isMsgId(source.id))
+          return new Error("Invalid source.id '" + source.id + "', expected SSB MSG ID.")
+
+        if (source.amount && typeof source.amount !== "number") 
+          return new Error("Invalid source.amount '" + source.amount + 
+                           "', expected number.")
+      } else {
+        return null
+      }
+    }
+
+    cb = cb || options    
+
+    if (typeof options === "function") {
+      options = {}
+    }
+
+    var err = null
+    if (err=checkType(source)) return cb(err)
+    else if (typeof source === "string") source = [ source ]
+    else if (typeof source === "object" && !Array.prototype.isPrototypeOf(source))
+      source = [ source.id ]
+    else 
+      source = source.map(function (s) { return typeof s === "string" ? s : s.id })
+
+    var invalid = {}
+    var amounts = {}
+    var recipient = {}
+    var proofs = {}
+
+    pull(
+      ancestors(ssb, source),
+      pull.drain( (op) => {
+        if (!isCorrectSchema(op)) {
+          invalid[op.id] = { op: op, error: new Error("Incorrect schema") }
+          return
+        }
+        
+        if (!amounts[op.id]) {
+          amounts[op.id] = 0
+          proofs[op.id] = []
+        }
+        
+        if (isCreate(op)) {
+          // TODO: Check consistency of token hash
+
+          amounts[op.id] += op.amount
+          receiver[op.id] = op.owner
+          proofs[op.id].push(op)
+
+        } else if (isGive(op)) {
+          // TODO: Check consistency of token hash
+          
+          var wrong = false
+          var total = 0
+          op.source.forEach(function (s) {
+            // TODO: Check that s.id exists
+            //
+            if (amounts[s.id] < s.amount) {
+              invalid[s.id] = { op: op, source: s.id, proof: proofs[s.id], error: new Error("Insufficient funds available") }
+              wrong = true
+            } else if (receiver[s.id] !== op.owner) {
+              invalid[s.id] = { op: op, source: s.id, proof: proofs[s.id], error: new Error("Inconsistent owner between the author of the give and the sources used") }
+              wrong = true
+            } else {
+              amounts[s.id] -= s.amount
+              total += s.amount
+              proofs[s.id].push(op)
+              wrong = wrong || false
+            }
+          })
+
+          if (total !== op.amount) {
+            wrong = true
+            invalid[op.id] = { 
+              op: op, source: op.id, total: total, 
+              error: new Error("Inconsistency between total amount of sources and operation amount") 
+            }
+          }
+
+          if (!wrong)
+            amounts[op.id] += op.amount
+        } else if (isBurn(op)) {
+          // TODO: Check consistency of token hash
+          //
+          // TODO: Check that s.id exists
+          //
+          
+          op.source.forEach(function (id) {
+            if (amounts[id] === 0) 
+              invalid[id] = { op: op, source: id, proof: proofs[id], error: new Error("Burning unavailable tokens") }
+            else 
+              amounts[id] = 0
+          })
+        }
+      }, (err) => {
+        if (err) return cb(err)
+        
+        if (Object.keys(invalid).length > 0) {
+          var err = new Error("Invalid source")
+          err.invalid = Object.values(invalid)
+          return cb(err)
+        } else 
+          return cb(null)
+      })
+    )
+
+    // Check sufficient funds available:
+    // 1. Funds from create are always available
+    // 2. Funds from a give.source are valid iff:
+    //   2.1 There exist no other give from the same author such that
+    //       the sum of amounts in all give from the same source is 
+    //       is greater than the amount available from that source.
+    //   2.2 The receiver of the source is indeed the author of the give.
+  }
+}
+
 var meta = {
   name: "tokens",
   version: "0.1.0",
@@ -866,16 +1310,18 @@ var meta = {
       unflag: null,
       validate: null
     }
-    api['create'] = create(ssb,api)
     api['list'] = list(ssb,api) 
+    api['create'] = create(ssb,api)
     api['give'] = give(ssb,api)
     api['burn'] = burn(ssb,api) 
+    api['validate'] = validate(ssb,api)
+    api['validate'].format = format(ssb,api)
+    api['validate'].requirements = requirements(ssb,api)
 
     api['flag'] = function (cb) { return cb(null)  }
     api['help'] = function () { return { description: 'Tokens for community economics.', commands: {} } } 
     api['trace'] = function (cb) { return cb(null)  }
     api['unflag'] = function (cb) { return cb(null)  }
-    api['validate'] = function (cb) { return cb(null)  }
     return api
   }
 }
@@ -883,5 +1329,7 @@ var meta = {
 var createType = 'tokens/' + meta['api-version'] + '/create'
 var giveType = 'tokens/' + meta['api-version'] + '/give'
 var burnType = 'tokens/' + meta['api-version'] + '/burn'
+var flagType = 'tokens/' + meta['api-version'] + '/flag'
+var unflagType = 'tokens/' + meta['api-version'] + '/unflag'
 
 module.exports = meta

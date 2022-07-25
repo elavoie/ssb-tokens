@@ -8,7 +8,7 @@ module.exports = function run (ssb) {
   var burn = util.promisify(ssb.tokens.burn)
   var newID = util.promisify(ssb.identities.create)
 
-  tape('burn with operation-id', function (t) {
+  tape('api.burn: with operation-id', function (t) {
     var created = null
     create(1, 'burn with operation-id')
     .then( (op) => {
@@ -29,7 +29,7 @@ module.exports = function run (ssb) {
     })
   })
 
-  tape('burn with invalid operation-id', function (t) {
+  tape('api.burn: with invalid operation-id', function (t) {
     burn(2)
     .then( (op) => {
       t.fail("Should fail")
@@ -41,7 +41,7 @@ module.exports = function run (ssb) {
     })
   })
 
-  tape('burn with invalid array of operation-id', function (t) {
+  tape('api.burn: with invalid array of operation-id', function (t) {
     burn([2])
     .then( (op) => {
       t.fail("Should fail")
@@ -53,7 +53,7 @@ module.exports = function run (ssb) {
     })
   })
 
-  tape('burn with many operation-id', function (t) {
+  tape('api.burn: with many operation-id', function (t) {
     var created1 = null
     var created2 = null
     var currency = 'burn with many op-id'
@@ -80,7 +80,7 @@ module.exports = function run (ssb) {
     })
   })
 
-  tape('burn with partially given source', function (t) {
+  tape('api.burn: with partially given source', function (t) {
     var created = null
     var receiver = null
     create(2, 'burn with partial source')
@@ -97,7 +97,7 @@ module.exports = function run (ssb) {
     })
   })
 
-  tape('burn already burnt tokens', function (t) {
+  tape('api.burn: already burnt tokens', function (t) {
     var created = null
     create(2, 'burn with partial source')
     .then( (op) => burn( (created=op).id ) )
@@ -112,7 +112,7 @@ module.exports = function run (ssb) {
     })
   })
 
-  tape('burn non-owned tokens', function (t) {
+  tape('api.burn: non-owned tokens', function (t) {
     var created = null
     create(2, 'burn non-owned tokens')
     .then( (op) => { created=op; return newID() })

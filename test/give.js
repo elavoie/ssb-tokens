@@ -9,7 +9,7 @@ module.exports = function run (ssb) {
   var newID = util.promisify(ssb.identities.create)
   var give = util.promisify(ssb.tokens.give)
 
-  tape('give with invalid number source', function (t) {
+  tape('api.give: with invalid number source', function (t) {
     newID().then((id) => give(12, id))
     .then(() => {
       t.fail("Should error")
@@ -21,9 +21,9 @@ module.exports = function run (ssb) {
     })
   })
 
-  tape('give with missing source amount', function (t) {
+  tape('api.give: with missing source amount', function (t) {
     var created = null
-    create(1, 'Give Shell')
+    create(1, 'give Shell')
     .then( (_created) => { created = _created; return newID() })
     .then( (id)       => give({ id: created.id }, id) )
     .then((op) => {
@@ -36,7 +36,7 @@ module.exports = function run (ssb) {
     })
   })
 
-  tape('give with missing source id', function (t) {
+  tape('api.give: with missing source id', function (t) {
     var created = null
     create(1, 'Give Shell')
     .then( (_created) => { created = _created; return newID() })
@@ -51,7 +51,7 @@ module.exports = function run (ssb) {
     })
   })
 
-  tape('give with missing source id', function (t) {
+  tape('api.give: with missing source id', function (t) {
     var created = null
     create(1, 'Give Shell')
     .then( (_created) => { created = _created; return newID() })
@@ -66,7 +66,7 @@ module.exports = function run (ssb) {
     })
   })
   
-  tape('give with invalid operation-id', function (t) {
+  tape('api.give: with invalid operation-id', function (t) {
     var created = null
     create(1, 'Give Shell')
     .then( (_created) => { created = _created; return newID() })
@@ -82,7 +82,7 @@ module.exports = function run (ssb) {
   })
 
 
-  tape('give with operation-id', function (t) {
+  tape('api.give: with operation-id', function (t) {
     var created = null
     create(1, 'Give Shell')
     .then( (_created) => { created = _created; return newID() })
@@ -98,7 +98,7 @@ module.exports = function run (ssb) {
     })
   })
 
-  tape('give with amount and operation id', function (t) {
+  tape('api.give: with amount and operation id', function (t) {
     var created = null
     create(1, 'Give Shell')
     .then( (_created) => { created = _created; return newID() })
@@ -114,7 +114,7 @@ module.exports = function run (ssb) {
     })
   })
 
-  tape('give with invalid token-hash', function (t) {
+  tape('api.give: with invalid token-hash', function (t) {
     var created = null
     create(2, 'give with invalid token-hash')
     .then( (_created) => { created = _created; return newID() })
@@ -130,7 +130,7 @@ module.exports = function run (ssb) {
     })
   })
 
-  tape('give with amount and token-hash', function (t) {
+  tape('api.give: with amount and token-hash', function (t) {
     var created = null
     create(2, 'give w/ amount&token-hash')
     .then( (_created) => { created = _created; return newID() })
@@ -149,7 +149,7 @@ module.exports = function run (ssb) {
     })
   })
 
-  tape('give w/o amount&token-hash', function (t) {
+  tape('api.give: w/o amount&token-hash', function (t) {
     var created = null
     create(1, 'give w/o amount&token-hash')
     .then( (_created) => { created = _created; return newID() })
@@ -168,7 +168,7 @@ module.exports = function run (ssb) {
     })
   })
 
-  tape('give from multiple sources with token-hash', function (t) {
+  tape('api.give: from multiple sources with token-hash', function (t) {
     var created1 = null
     var created2 = null
     var currency = 'give many sources token-hash'
@@ -200,7 +200,7 @@ module.exports = function run (ssb) {
     })
   })
 
-  tape('give insufficient funds', function (t) {
+  tape('api.give: insufficient funds', function (t) {
     var created = null
     create(1, 'give insufficient funds')
     .then( (_created) => { created = _created; return newID() } )
@@ -215,7 +215,7 @@ module.exports = function run (ssb) {
     })
   })
 
-  tape('give spent funds', function (t) {
+  tape('api.give: spent funds', function (t) {
     var created = null
     var receiver = null
     create(1, 'give spent funds')
@@ -233,7 +233,7 @@ module.exports = function run (ssb) {
   })
 
 
-  tape('give from multiple sources with operation id', function (t) {
+  tape('api.give: from multiple sources with operation id', function (t) {
     var created1 = null
     var created2 = null
     var receiver = null
@@ -260,7 +260,7 @@ module.exports = function run (ssb) {
     })
   })
 
-  tape('give non-owned tokens', function (t) {
+  tape('api.give: non-owned tokens', function (t) {
     var created = null
     var giver = null
     var receiver = null

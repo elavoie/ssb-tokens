@@ -14,7 +14,7 @@ module.exports = function run (ssb) {
   var burn = util.promisify(ssb.tokens.burn)
   var list = util.promisify(ssb.tokens.list)
 
-  tape('create', function (t) {
+  tape('api.list: with single create', function (t) {
     var creator = null
     var receiver = null
     var currency = 'Listed Shells'
@@ -42,7 +42,7 @@ module.exports = function run (ssb) {
     })
   })
 
-  tape('create+give', function (t) {
+  tape('api.list: with create+give', function (t) {
     var creator = null
     var receiver = null
     var currency = 'Listed Shells'
@@ -89,7 +89,7 @@ module.exports = function run (ssb) {
     })
   })
 
-  tape('create+burn', function (t) {
+  tape('api.list: create+burn', function (t) {
     var creator = null
     var currency = 'Listed Shells'
     var msg = null
@@ -120,7 +120,7 @@ module.exports = function run (ssb) {
     })
   })
 
-  tape('create+give+burn', function (t) {
+  tape('api.list: create+give+burn', function (t) {
     var creator = null
     var receiver = null
     var currency = 'Listed Shells'
@@ -153,7 +153,7 @@ module.exports = function run (ssb) {
     })
   })
 
-  tape('stateless list filtered by owner', function (t) {
+  tape('api.list: stateless list filtered by owner', function (t) {
     var creator1 = null
     var creator2 = null
     newID().then( (id) => creator1 = id )
@@ -183,7 +183,7 @@ module.exports = function run (ssb) {
     })
   })
 
-  tape('stateless list not filtered by owner', function (t) {
+  tape('api.list: stateless list not filtered by owner', function (t) {
     list({}, { stateless: true })
     .then( (tokens) => t.ok(tokens) || log(tokens) )
     .then( () => t.end() )
@@ -193,7 +193,7 @@ module.exports = function run (ssb) {
     })
   })
 
-  tape('list all tokens', function (t) {
+  tape('api.list: all tokens', function (t) {
     list()
     .then( (tokens) =>  t.ok(tokens) || log(tokens) )
     .then( () => t.end() )
@@ -203,7 +203,7 @@ module.exports = function run (ssb) {
     })
   })
 
-  tape('list gift to oneself', function (t) {
+  tape('api.list: gift to oneself', function (t) {
     var creator = null
     newID().then( (id) => create(2, "Own tokens", { owner: creator=id }) )
     .then( (op) => log(op) || give({ amount: 1, id: op.id }, op.owner, { owner: creator }) ) 
