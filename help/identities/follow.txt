@@ -1,0 +1,18 @@
+usage: ssb-tokens identities follow <ssb-id> [<options>]
+
+Follow another <ssb-id>, to show interest in replicating their messages.
+
+Examples:
+
+    ssb-tokens identities follow @ABCD...
+    ssb-tokens identities follow @bob --author @alice
+
+<options> (default?, default value, type):
+
+    --author=ID (true, ID=valueOf(".ssb/secret/public"), SSB_ID)
+        SSB ID (public key) of the follower. Your SSB installation 
+        should have access to the corresponding private key for the 
+        operation to succeed. (included in tokenType)
+
+See 'ssb-tokens help ssb' for an explanation of the Secure-Scuttlebutt 
+concepts (ex: SSB_MSG_ID) used.

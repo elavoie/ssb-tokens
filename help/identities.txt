@@ -1,0 +1,10 @@
+usage: ssb-tokens identities <command> [<args>]
+
+COMMANDS:
+
+    alias       give a human-readable name to an identity
+    create      create a new identity
+    follow      replicate another identity's messages 
+    list        list identities
+
+See 'ssb-tokens identities <command> --help' for help about a specific command.

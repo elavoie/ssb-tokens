@@ -1,4 +1,5 @@
 var tape = require('tape')
+var util = require('util')
 
 module.exports = function run (ssb) {
   tape('Scuttleflotilla Crowdfunding', function (t) {

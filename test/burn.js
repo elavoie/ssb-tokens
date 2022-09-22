@@ -1,130 +1,114 @@
 var tape = require('tape')
 var meta = require('../')
-var util = require('util')
 
 module.exports = function run (ssb) {
-  var create = util.promisify(ssb.tokens.create)
-  var give = util.promisify(ssb.tokens.give)
-  var burn = util.promisify(ssb.tokens.burn)
-  var newID = util.promisify(ssb.identities.create)
+  tape('burn: with operation-id', function (t) {
+    ssb.tokens.create(1, 'burn with operation-id', function (err, createMsg) {
+    t.error(err)
 
-  tape('api.burn: with operation-id', function (t) {
-    var created = null
-    create(1, 'burn with operation-id')
-    .then( (op) => {
-      return burn( (created=op).id ) 
-    })
-    .then( (op) => {
-      t.ok(op)
-      t.equal(op['token-hash'], created['token-hash'])
-      t.equal(op.amount, created.amount)
-      t.equal(op.source.length, 1)
-      t.equal(op.source[0], created.id)
-      t.end()
-    })
-    .catch( (err) => {
-      console.log(err.stack)
-      t.fail(err)
-      t.end()
+    ssb.tokens.burn(createMsg.key, function (err, burnMsg) {
+    t.error(err)
+  
+    var op = burnMsg.value.content
+    t.ok(op)
+    t.equal(op.tokenType, createMsg.value.content.tokenType)
+    t.equal(op.amount, createMsg.value.content.amount)
+    t.equal(op.sources.length, 1)
+    t.equal(op.sources[0].id, createMsg.key)
+    t.equal(op.sources[0].amount, 1)
+    t.end()
+    }) })
+  })
+
+  tape('burn: incorrect with invalid operation-id', function (t) {
+    ssb.tokens.burn(2, function (err, burnMsg) {
+    t.true(err)
+    t.end()
     })
   })
 
-  tape('api.burn: with invalid operation-id', function (t) {
-    burn(2)
-    .then( (op) => {
-      t.fail("Should fail")
-      t.end()
-    })
-    .catch( (err) => {
-      t.true(err)
-      t.end()
+  tape('burn: incorrect with invalid array of operation-id', function (t) {
+    ssb.tokens.burn([2], function (err, burnMsg) {
+    t.true(err)
+    t.end()
     })
   })
 
-  tape('api.burn: with invalid array of operation-id', function (t) {
-    burn([2])
-    .then( (op) => {
-      t.fail("Should fail")
-      t.end()
-    })
-    .catch( (err) => {
-      t.true(err)
-      t.end()
-    })
+  tape('burn: correct with many operation-id', function (t) {
+    var name = 'burn with many op-id'
+    ssb.tokens.create(1, name, function (err, createMsg1) {
+    t.error(err)
+
+    ssb.tokens.create(1, name, function (err, createMsg2) {
+    t.error(err)
+
+    var sourceIds = [ createMsg1.key, createMsg2.key ]
+    ssb.tokens.burn(sourceIds, function (err, burnMsg) {
+    t.error(err)
+
+    var op = burnMsg.value.content
+    t.ok(op)
+    t.equal(op.tokenType, createMsg1.value.content.tokenType)
+    t.equal(op.tokenType, createMsg2.value.content.tokenType)
+    t.equal(op.amount, createMsg1.value.content.amount + 
+                        createMsg2.value.content.amount)
+    t.equal(op.sources.length, 2)
+    t.ok(sourceIds.indexOf(op.sources[0].id) > -1)
+    t.ok(sourceIds.indexOf(op.sources[1].id) > -1)
+    t.end()
+    }) }) })
   })
 
-  tape('api.burn: with many operation-id', function (t) {
-    var created1 = null
-    var created2 = null
-    var currency = 'burn with many op-id'
-    create(1, currency)
-    .then( (_created) => { created1 = _created; return create(1, currency) } )
-    .then( (_created) => {
-      created2 = _created
-      return burn( [created1.id, created2.id] ) 
-    })
-    .then( (op) => {
-      t.ok(op)
-      t.equal(op['token-hash'], created1['token-hash'])
-      t.equal(op['token-hash'], created2['token-hash'])
-      t.equal(op.amount, created1.amount + created2.amount)
-      t.equal(op.source.length, 2)
-      t.ok(op.source.indexOf(created1.id) > -1)
-      t.ok(op.source.indexOf(created2.id) > -1)
-      t.end()
-    })
-    .catch( (err) => {
-      console.log(err.stack)
-      t.fail(err)
-      t.end()
-    })
+  tape('burn: incorrect with partially given source', function (t) {
+    ssb.tokens.create(2, 'burn with partial source', function (err, createMsg) {
+    t.error(err)
+
+    ssb.identities.create(function (err, receiver) {
+    t.error(err)
+
+    ssb.tokens.give(
+    { amount: 1, id: createMsg.key }, 
+    receiver, function (err, giveMsg) {
+    t.error(err)
+
+    ssb.tokens.burn(createMsg.key, function (err, burnMsg) {
+    t.true(err)
+    t.end()
+    }) }) }) })
   })
 
-  tape('api.burn: with partially given source', function (t) {
-    var created = null
-    var receiver = null
-    create(2, 'burn with partial source')
-    .then( (op) => { created = op; return newID() } )
-    .then( (id) => { receiver = id; return give({ amount: 1, id: created.id }, receiver) } )
-    .then( (op) => burn( created.id ) )
-    .then( (op) => {
-      t.fail("Should fail")
-      t.end()
-    })
-    .catch( (err) => {
-      t.true(err)
-      t.end()
-    })
+  tape('burn: incorrect already burnt tokens', function (t) {
+    ssb.tokens.create(2, 'burn with burnt source', function (err, createMsg) {
+    t.error(err)
+
+    ssb.tokens.burn(createMsg.key, function (err, burnMsg) {
+    t.error(err)
+
+    ssb.tokens.burn(createMsg.key, function (err, burnMsg2) {
+    t.true(err)
+    t.end()
+    }) }) })
   })
 
-  tape('api.burn: already burnt tokens', function (t) {
-    var created = null
-    create(2, 'burn with partial source')
-    .then( (op) => burn( (created=op).id ) )
-    .then( (op) => burn( created.id ) )
-    .then( (op) => {
-      t.fail("Should fail")
-      t.end()
-    })
-    .catch( (err) => {
-      t.true(err)
-      t.end()
-    })
+  tape('burn: incorrect non-owned tokens', function (t) {
+    ssb.tokens.create(2, 'burn non-owned tokens', function (err, createMsg) {
+    t.error(err)
+
+    ssb.identities.create(function (err, nonOwner) {
+    t.error(err)
+
+    ssb.tokens.burn(createMsg.key, { author: nonOwner }, function (err) {
+    t.true(err)
+    t.end()
+    }) }) })
   })
 
-  tape('api.burn: non-owned tokens', function (t) {
-    var created = null
-    create(2, 'burn non-owned tokens')
-    .then( (op) => { created=op; return newID() })
-    .then( (nonOwner) => burn( created.id , { owner: nonOwner }) )
-    .then( (op) => {
-      t.fail("Should fail")
-      t.end()
-    })
-    .catch( (err) => {
-      t.true(err)
-      t.end()
+  tape('burn: missing source', function (t) {
+    var missing = "%2Wy4PB+8Fn5qeaZng4Lj5nteE+kAe6D58UKVhgiJfD4=.sha256"
+
+    ssb.tokens.burn(missing, function (err) {
+    t.true(err)
+    t.end()
     })
   })
-
 }

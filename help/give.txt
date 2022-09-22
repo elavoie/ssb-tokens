@@ -1,39 +1,28 @@
-usage: ssb-tokens give [<options>] <number> <tokens> [<number> <tokens>, ...] <recipient>
+usage: ssb-tokens give  <number> <tokens> [<number> <tokens>, ... ] <receiver> [ <options> ]
 
-Transfer <number> <tokens> to <recipient>.
+Transfer <number> <tokens> to <receiver>.
 
 <number> is the number of tokens to transfer, as an integer or a floating 
-    point value . It should be equal or less than the number of <tokens> 
+    point value. It should be equal or less than the number of <tokens> 
     available. 
-<tokens> can be the creation message of the tokens (SSB_MSG_ID), a transfer 
-    message (SSB_MSG_ID), the type of currency mentioned in a creation 
-    message (ex: "USD"), or the description referred by the creation 
-    message (SSB_MSG_ID).
-<recipient> is the alias or the SSB_ID of the recipient.
+
+<tokens> can be a source operation (SSB_MSG_ID) or a token type (String).
+    All <tokens> should have the same token type.
+ 
+<receiver> is the alias or the SSB_ID of the receiver.
 
 Examples:
 
-    ssb-tokens give 2 "hours" "@elavoie"
-    ssb-tokens give 2.53 "USD" "@andre"
-    ssb-tokens give 6 "%AFdafed..." "@YMaf8a..."
+    ssb-tokens give 6 "%AFda..." "@YMaf..."
+    ssb-tokens give 1 7e013198c04ddb4a @alice --author @bob
+    ssb-tokens give 1 $(ssb-tokens types --nm Point --au @alice -s -t) @bob
 
-<tokens> may implicitly refer to multiple creation messages, ex: when the 
-currency or description message have been used by multiple creation 
-messages. By default, the tokens from multiple <tokens> will be spent in
-chronological order, i.e. the oldest tokens will be spent first. You may
-specify a different order by explicitly specifying the SSB_MSG_IDs to transfer
-from.
-
-To be valid, a new transaction should:
-    1. Unambiguously determine the amount and origin of tokens, from one 
-       or multiple sources;
-    2. Have available and valid transaction histories from the original 
-       creation message up to each source of tokens;
-    3. Use a number of tokens, from each source of tokens, less or equal 
-       to the number of tokens available.
+If <tokens> is a token type, multiple sources may be used
+to satisfy the requested amount. Sources are selected in chronological
+order of reception, from oldest to newest.
 
 <options> (default?, default value, type):
-    --owner=ID (true, ID=valueOf(".ssb/secret/public"), SSB_ID)
+    --author=ID (true, ID=valueOf(".ssb/secret/public"), SSB_ID)
         SSB ID (public key) of the owner of tokens. Your SSB installation 
         should have access to the corresponding private key for the 
         operation to succeed.
@@ -42,6 +31,12 @@ To be valid, a new transaction should:
         Describes the purpose of the transfer. DESC can either be null or an
         SSB Message ID. The description message can be created by any
         author (i.e. it can be someone else than you).
+
+    --only-id (false, false, Boolean)
+        Output only the SSB Msg ID if successful, without a humane description.
+
+    --json (false, false, Boolean)
+        Output the published message in JSON format if successful.
 
 See 'ssb-tokens help ssb' for an explanation of the Secure-Scuttlebutt 
 concepts (ex: SSB_MSG_ID) used.

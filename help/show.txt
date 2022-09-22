@@ -1,0 +1,31 @@
+usage: ssb-tokens show <id> [<options>]
+
+Show the operation associated to <id>. By default, describe the operation
+in a human readable format with participants named after their aliases.
+
+Examples:
+
+    ssb-tokens show %KhKFa...=.sha256
+
+<options> (default?, default value, type):
+    --json (false, false, Boolean)
+          Output in JSON format instead.
+
+     --no-alias (false, false, Boolean)
+          Output the SSB Log ID instead of the alias of participants.
+
+    --no-cache (false, false, Boolean
+          Force verification without the use of the cache.
+
+    --no-validate (false, false, Boolean)
+          Skip validation.
+
+    --ssb-message (false, false, Boolean)
+          Output the enclosing SSB Message including meta information.
+
+    --ssb-message-value (false, false, Boolean)
+          Output the enclosing SSB Message value.    
+
+See 'ssb-tokens help ssb' for an explanation of the Secure-Scuttlebutt 
+concepts (ex: SSB_MSG_ID) used.
+

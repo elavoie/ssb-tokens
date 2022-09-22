@@ -1,13 +1,20 @@
-usage: ssb-tokens [--help] <command> [<args>]
+usage: ssb-tokens <command> [<args>]
 
 COMMANDS:
-
-    burn        destroy some of your tokens
+    burn        destroy tokens
     create      mint new tokens
-    flag        assign a label to tokens
-    give        give some of your tokens to someone else
-    list        list your tokens or those of others
-    trace       trace the history of tokens
-    unflag      remove a label you assigned
+    give        transfer tokens
 
-See 'ssb-tokens help <command>' for help about a specific command.
+  queries:
+    ancestors   sources of an operation
+    balance     net amount owned by owner for a token type
+    operations  list operations matching
+    show        show an operation
+    types       find token types matching 
+    unspent     unspent amount of an operation
+
+  others:
+    identities  manage identities
+    validate    verify operations 
+
+See 'ssb-tokens <command> --help' for help about a specific command.

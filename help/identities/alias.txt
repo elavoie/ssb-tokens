@@ -1,0 +1,26 @@
+usage: ssb-tokens identities alias [<name> <ssb-id>] [<options>]
+
+Associates <name> to <ssb-id>. Replaces previous names.  Can be
+applied to SSB IDs you do not own.
+
+Examples:
+
+    ssb-tokens identities alias Maintainer "@@XO7Lk..."
+    ssb-tokens identities alias Maintainer "@XO7Lk..." --author @elavoie
+    ssb-tokens identities alias --name "Maintainer" --id "@XO7Lk..."
+
+<options> (default?, default value, type):
+
+    --name=NAME (false, NAME='', String)
+        Same as <name>.
+
+    --id=ID (false, ID='', SSB_ID)
+        Same as <ssb-id>.
+
+    --author=AUTHOR (true, AUTHOR=valueOf(".ssb/secret/public"), SSB_ID)
+        SSB ID (public key) of the alias assigner. Your SSB installation 
+        should have access to the corresponding private key for the 
+        operation to succeed. (included in tokenType)
+
+See 'ssb-tokens help ssb' for an explanation of the Secure-Scuttlebutt 
+concepts (ex: SSB_ID) used.

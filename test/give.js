@@ -4,277 +4,296 @@ var util = require('util')
 
 
 module.exports = function run (ssb) {
+  tape('give: incorrect with invalid number source', function (t) {
+    ssb.identities.create(function (err, id) {
+    t.error(err)
 
-  var create = util.promisify(ssb.tokens.create)
-  var newID = util.promisify(ssb.identities.create)
-  var give = util.promisify(ssb.tokens.give)
-
-  tape('api.give: with invalid number source', function (t) {
-    newID().then((id) => give(12, id))
-    .then(() => {
-      t.fail("Should error")
-      t.end()
-    })
-    .catch((err) => {
-      t.true(err)
-      t.end()
-    })
+    ssb.tokens.give(12, id, function (err, msg) {
+    t.true(err)
+    t.end()
+    }) })
   })
 
-  tape('api.give: with missing source amount', function (t) {
-    var created = null
-    create(1, 'give Shell')
-    .then( (_created) => { created = _created; return newID() })
-    .then( (id)       => give({ id: created.id }, id) )
-    .then((op) => {
-      t.ok(op)
-      t.end()
-    })
-    .catch((err) => {
-      t.false(err)
-      t.end()
-    })
+  tape('give: correct with only source id', function (t) {
+    ssb.tokens.create(1, 'Give Shell', function (err, createMsg) {
+    t.error(err)
+
+    ssb.identities.create(function (err, id) {
+    t.error(err)
+
+    ssb.tokens.give(createMsg.key, id, function (err, giveMsg) {
+    t.error(err)
+    t.end()
+    }) }) })
   })
 
-  tape('api.give: with missing source id', function (t) {
-    var created = null
-    create(1, 'Give Shell')
-    .then( (_created) => { created = _created; return newID() })
-    .then( (id)       => give({ amount: 1 }, id) )
-    .then(() => {
-      t.fail("Should error")
-      t.end()
-    })
-    .catch((err) => {
-      t.true(err)
-      t.end()
-    })
+  tape('give: correct with missing source amount', function (t) {
+    ssb.tokens.create(1, 'Give Shell', function (err, createMsg) {
+    t.error(err)
+
+    ssb.identities.create(function (err, id) {
+    t.error(err)
+
+    ssb.tokens.give({ id: createMsg.key }, id, function (err, giveMsg) {
+    t.error(err)
+    t.end()
+    }) }) })
   })
 
-  tape('api.give: with missing source id', function (t) {
-    var created = null
-    create(1, 'Give Shell')
-    .then( (_created) => { created = _created; return newID() })
-    .then( (id)       => give({ amount: 1 }, id) )
-    .then((op) => {
-      console.log(op)
-      t.fail("Should error")
-    })
-    .catch((err) => {
-      t.true(err)
-      t.end()
-    })
+  tape('give: incorrect with missing source id', function (t) {
+    ssb.tokens.create(1, "Give Shell", function (err, createMsg) {
+    t.error(err)
+
+    ssb.identities.create(function (err, id) {
+    t.error(err)
+
+    ssb.tokens.give({ amount: 1 }, id, function (err, giveMsg) {
+    t.true(err)
+    t.end()
+    }) }) })
   })
+
   
-  tape('api.give: with invalid operation-id', function (t) {
-    var created = null
-    create(1, 'Give Shell')
-    .then( (_created) => { created = _created; return newID() })
-    .then( (id)       => give('blabla', id) )
-    .then((op) => {
-      console.log(op)
-      t.fail("Should error")
-    })
-    .catch((err) => {
-      t.true(err)
-      t.end()
-    })
+  tape('give: incorrect with invalid operation-id', function (t) {
+    ssb.tokens.create(1, 'Give Shell', function (err, createMsg) {
+    t.error(err)
+
+    ssb.identities.create(function (err, id) {
+    t.error(err)
+
+    ssb.tokens.give('blabla', id, function (err, giveMsg) {
+    t.true(err)
+    t.end()
+    }) }) })
   })
 
 
-  tape('api.give: with operation-id', function (t) {
-    var created = null
-    create(1, 'Give Shell')
-    .then( (_created) => { created = _created; return newID() })
-    .then( (id)       => give(created.id, id) )
-    .then((op) => {
-      t.ok(op)
-      t.end()
-    })
-    .catch((err) => {
-      console.log(err.stack)
-      t.fail(err)
-      t.end()
-    })
+  tape('give: correct with operation-id', function (t) {
+    ssb.tokens.create(1, 'Give Shell', function (err, createMsg) {
+    t.error(err)
+
+    ssb.identities.create(function (err, id) {
+    t.error(err)
+
+    ssb.tokens.give(createMsg.key, id, function (err, giveMsg) {
+    t.error(err)
+    t.end()
+    }) }) })
   })
 
-  tape('api.give: with amount and operation id', function (t) {
-    var created = null
-    create(1, 'Give Shell')
-    .then( (_created) => { created = _created; return newID() })
-    .then( (id)       => give({ amount: 1, id: created.id }, id) )
-    .then((op) => {
-      t.ok(op)
-      t.end()
-    })
-    .catch((err) => {
-      console.log(err.stack)
-      t.fail(err)
-      t.end()
-    })
+  tape('give: correct with amount and operation id', function (t) {
+    ssb.tokens.create(1, 'Give Shell', function (err, createMsg) {
+    t.error(err)
+
+    ssb.identities.create(function (err, id) {
+    t.error(err)
+
+    ssb.tokens.give({ id: createMsg.key, amount: 1 }, id, function (err, giveMsg) {
+    t.error(err)
+    t.end()
+    }) }) })
   })
 
-  tape('api.give: with invalid token-hash', function (t) {
-    var created = null
-    create(2, 'give with invalid token-hash')
-    .then( (_created) => { created = _created; return newID() })
-    .then( (id)       => give({ amount: 1, "token-hash": created["token-hash"] + 'bad' }, id) )
-    .then((op) => {
-      console.log(op)
-      t.fail('Should fail')
-      t.end()
-    })
-    .catch((err) => {
-      t.true(err)
-      t.end()
-    })
+  tape('give: incorrect with invalid tokenType', function (t) {
+    ssb.tokens.create(1, 'Give Invalid TokenType', function (err, createMsg) {
+    t.error(err)
+
+    ssb.identities.create(function (err, id) {
+    t.error(err)
+
+    var badTokenType = createMsg.value.content.tokenType  + 'bad'
+
+    ssb.tokens.give(
+    { tokenType: badTokenType }, 
+    id, function (err, giveMsg) {
+    t.true(err)
+    t.end()
+    }) }) })
   })
 
-  tape('api.give: with amount and token-hash', function (t) {
-    var created = null
-    create(2, 'give w/ amount&token-hash')
-    .then( (_created) => { created = _created; return newID() })
-    .then( (id)       => give({ amount: 1, "token-hash": created["token-hash"] }, id) )
-    .then((op) => {
-      t.ok(op)
-      t.equal(op.amount, 1)
-      t.equal(op.source.length, 1)
-      t.equal(op.source[0].id, created.id)
-      t.end()
-    })
-    .catch((err) => {
-      console.log(err.stack)
-      t.fail(err)
-      t.end()
-    })
+  tape('give: incorrect with tokenType with no operation', function (t) {
+    ssb.identities.create(function (err, id) {
+    t.error(err)
+
+    var emptyTokenType = 'abcdef0123456789'
+
+    ssb.tokens.give(
+    { tokenType: emptyTokenType }, 
+    id, function (err, giveMsg) {
+    t.true(err)
+    t.end()
+    }) }) 
   })
 
-  tape('api.give: w/o amount&token-hash', function (t) {
-    var created = null
-    create(1, 'give w/o amount&token-hash')
-    .then( (_created) => { created = _created; return newID() })
-    .then( (id)       => give({ "token-hash": created["token-hash"] }, id) )
-    .then((op) => {
-      t.ok(op)
-      t.equal(op.amount, 1)
-      t.equal(op.source.length, 1)
-      t.equal(op.source[0].id, created.id)
-      t.end()
-    })
-    .catch((err) => {
-      console.log(err.stack)
-      t.fail(err)
-      t.end()
-    })
+  tape('give: correct with amount and tokenType', function (t) {
+    ssb.tokens.create(2, 'GiveWAmntWTokType', function (err, createMsg) {
+    t.error(err)
+
+    ssb.identities.create(function (err, id) {
+    t.error(err)
+
+    ssb.tokens.give({ 
+      amount: 1,
+      tokenType: createMsg.value.content.tokenType
+    }, id, function (err, giveMsg) {
+    t.error(err)
+    var op = giveMsg.value.content
+    t.ok(op)
+    t.equal(op.amount, 1)
+    t.equal(op.sources.length, 1)
+    t.equal(op.sources[0].id, createMsg.key)
+    t.equal(op.sources[0].amount, 1)
+    t.equal(op.tokenType, createMsg.value.content.tokenType)
+    t.end()
+    }) }) })
   })
 
-  tape('api.give: from multiple sources with token-hash', function (t) {
-    var created1 = null
-    var created2 = null
-    var currency = 'give many sources token-hash'
-    create(1, currency)
-    .then( (_created) => { 
-      created1 = _created; 
-      return create(1, currency)
-    })
-    .then ((_created) => {
-      created2 = _created 
-      return newID() 
-    })
-    .then( (id) => give({ "token-hash": created1["token-hash"] }, id) )
-    .then( (op) => {
-      t.ok(op)
-      var sourceIds = { } 
-      sourceIds[created1["id"]] = true
-      sourceIds[created2["id"]] = true 
-      t.equal(op.amount, 2)
-      t.equal(op.source.length, 2)
-      t.ok(op.source[0].id in sourceIds)
-      t.ok(op.source[1].id in sourceIds)
-      t.end()
-    })
-    .catch((err) => {
-      console.log(err.stack)
-      t.fail(err)
-      t.end()
-    })
+  tape('give: correct w/o amount and w/ tokenType', function (t) {
+    ssb.tokens.create(2, 'GiveWOAmntWTokType', function (err, createMsg) {
+    t.error(err)
+
+    ssb.identities.create(function (err, id) {
+    t.error(err)
+
+    ssb.tokens.give({ 
+      tokenType: createMsg.value.content.tokenType
+    }, id, function (err, giveMsg) {
+    t.error(err)
+    var op = giveMsg.value.content
+    t.ok(op)
+    t.equal(op.amount, 2)
+    t.equal(op.sources.length, 1)
+    t.equal(op.sources[0].id, createMsg.key)
+    t.equal(op.sources[0].amount, 2)
+    t.equal(op.tokenType, createMsg.value.content.tokenType)
+    t.end()
+    }) }) })
   })
 
-  tape('api.give: insufficient funds', function (t) {
-    var created = null
-    create(1, 'give insufficient funds')
-    .then( (_created) => { created = _created; return newID() } )
-    .then( (id)       => give({ amount: 2, "token-hash": created["token-hash"] }, id) )
-    .then( (op)       => {
-      t.fail("Should error")
-      t.end()
-    })
-    .catch((err) => {
-      t.true(err)
-      t.end()
-    })
+  tape('give: correct from multiple sources with token-hash', function (t) {
+    ssb.tokens.create(1, 'GiveMultTokenHash', function (err, createMsg1) {
+    t.error(err)
+
+    ssb.tokens.create(1, 'GiveMultTokenHash', function (err, createMsg2) {
+    t.error(err)
+
+    ssb.identities.create(function (err, id) {
+    t.error(err)
+
+    ssb.tokens.give({ 
+      tokenType: createMsg1.value.content.tokenType
+    }, id, function (err, giveMsg) {
+    t.error(err)
+    var op = giveMsg.value.content
+    t.ok(op)
+    var sourceIds = { } 
+    sourceIds[createMsg1.key] = true
+    sourceIds[createMsg2.key] = true 
+    t.equal(op.amount, 2)
+    t.equal(op.sources.length, 2)
+    t.ok(op.sources[0].id in sourceIds)
+    t.equal(op.sources[0].amount, 1)
+    t.ok(op.sources[1].id in sourceIds)
+    t.equal(op.sources[1].amount, 1)
+    t.end()
+    }) }) }) })
   })
 
-  tape('api.give: spent funds', function (t) {
-    var created = null
-    var receiver = null
-    create(1, 'give spent funds')
-    .then( (_created) => { created = _created; return newID() } )
-    .then( (id)       => give({ amount: 1, "token-hash": created["token-hash"] }, receiver=id) )
-    .then( ()         => give({ amount: 1, "token-hash": created["token-hash"] }, receiver) )
-    .then( (op)       => {
-      t.fail("Should error")
-      t.end()
-    })
-    .catch((err) => {
-      t.true(err)
-      t.end()
-    })
+  tape('give: incorrect insufficient funds', function (t) {
+    ssb.tokens.create(1, 'GiveInsufficientFunds', function (err, createMsg) {
+    t.error(err)
+
+    ssb.identities.create(function (err, id) {
+    t.error(err)
+
+    ssb.tokens.give({ 
+      amount: 2, tokenType: 
+      createMsg.value.content.tokenType
+    }, id, function (err, giveMsg) {
+    t.true(err)
+    t.end()
+    }) }) })
   })
 
+  tape('give: incorrect spent funds', function (t) {
+    ssb.tokens.create(1, 'GiveSpentFunds', function (err, createMsg) {
+    t.error(err)
 
-  tape('api.give: from multiple sources with operation id', function (t) {
-    var created1 = null
-    var created2 = null
-    var receiver = null
-    create(1, 'give multiple op-id')
-    .then( (_created) => { created1 = _created; return create(1, 'give multiple op-id') } )
-    .then( (_created) => { created2 = _created; return newID() } )
-    .then( (id)       => give([{ amount: 1, id: created1.id }, 
-                               { amount: 1, id: created2.id }], receiver=id) )
-    .then( (op)       => {
-      t.ok(op)
-      t.equal(op.amount, 2)
-      var sourceIds = op.source.map((s) => s.id)
-      t.ok(sourceIds.indexOf(created1.id) > -1)
-      t.ok(sourceIds.indexOf(created2.id) > -1)
-      t.equal(op["token-hash"], created1["token-hash"])
-      t.equal(op["token-hash"], created2["token-hash"])
-      t.equal(op.recipient, receiver)
-      t.end()
-    })
-    .catch((err) => {
-      console.log(err.stack)
-      t.fail(err)
-      t.end()
-    })
+    ssb.identities.create(function (err, id) {
+    t.error(err)
+
+    var tokenType = createMsg.value.content.tokenType
+    ssb.tokens.give({ 
+      amount: 1, 
+      tokenType: tokenType 
+    }, id, function (err, giveMsg1) {
+    t.error(err)    
+
+    ssb.tokens.give({ 
+      amount: 1, 
+      tokenType: tokenType 
+    }, id, function (err, giveMsg1) {
+    t.true(err)    
+    t.end()
+    }) }) }) })
   })
 
-  tape('api.give: non-owned tokens', function (t) {
-    var created = null
-    var giver = null
-    var receiver = null
-    create(1, 'non-owned token')
-    .then( (_created) => { created = _created; return newID() } )
-    .then( (id) => { giver = id; return newID() } )
-    .then( (id) => give(created.id, receiver=id, { owner: giver }) )
-    .then( (op) => {
-      t.fail("Should error")
-      t.end()
-    })
-    .catch((err) => {
-      t.true(err)
-      t.end()
-    })
+  tape('give: correct from multiple sources with operation id', function (t) {
+    ssb.tokens.create(1, 'GiveMultipleOpId', function (err, createMsg1) {
+    t.error(err)
+
+    ssb.tokens.create(1, 'GiveMultipleOpId', function (err, createMsg2) {
+    t.error(err)
+
+    ssb.identities.create(function (err, receiver) {
+    t.error(err)
+
+    ssb.tokens.give([
+      { amount: 1, id: createMsg1.key },
+      { amount: 1, id: createMsg2.key }
+    ], receiver, function (err, giveMsg) {
+    t.error(err)
+    var op = giveMsg.value.content 
+    t.ok(op)
+    t.equal(op.amount, 2)
+    var sourceIds = op.sources.map((s) => s.id)
+    t.ok(sourceIds.indexOf(createMsg1.key) > -1)
+    t.ok(sourceIds.indexOf(createMsg2.key) > -1)
+    t.equal(op.tokenType, createMsg1.value.content.tokenType)
+    t.equal(op.tokenType, createMsg2.value.content.tokenType)
+    t.equal(op.receiver, receiver)
+    t.end()
+    }) }) }) })
+  })
+
+  tape('give: incorrect non-owned tokens', function (t) {
+    ssb.tokens.create(1, 'NonOwnedTokens', function (err, createMsg) {
+    t.error(err)
+
+    ssb.identities.create(function (err, giver) {
+    t.error(err)
+
+    ssb.identities.create(function (err, receiver) {
+    t.error(err)
+
+    ssb.tokens.give(
+    createMsg.key, 
+    receiver, 
+    { author: giver }, function (err, giveMsg) {
+    t.true(err)
+    t.end()
+    }) }) }) })
+  })
+
+  tape('give: incorrect with source operation not in local database', function (t) {
+    var missing = "%2Wy4PB+8Fn5qeaZng4Lj5nteE+kAe6D58UKVhgiJfD4=.sha256"
+
+    ssb.identities.create(function (err, receiver) {
+    t.error(err)
+
+    ssb.tokens.give(missing, receiver, function (err, giveMsg) {
+    t.true(err)
+    t.end()
+    }) })
   })
 }

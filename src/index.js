@@ -1,135 +1,349 @@
 var ref = require('ssb-ref')
 var pull = require('pull-stream')
-var util = require('util')
-var crypto = require('crypto')
+var many = require('pull-many')
 var pull = require('pull-stream')
+var defer = require('pull-defer')
+var sortedMerge = require('pull-sorted-merge')
+var crypto = require('crypto')
 var debug = require('debug')
 var ref = require('ssb-ref')
+var ssbKeys = require('ssb-keys')
+var util = require('./util')
 
 var log = debug('ssb-tokens')
-
+var ALLOWEDCHARS =
+"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 _-"
+var TOKENTYPELENGTH = 16
+var NAMELENGTH = 30
+var UNITLENGTH = 10
 var sum = (a,b) => a+b
 
-function isCreate (op) {
-  return op.type === createType 
+function flatten(ary) {
+  var flat = []
+
+  function recurse (v) {
+    if (!Array.prototype.isPrototypeOf(v))
+      flat.push(v)
+    else 
+      v.forEach(recurse)
+  }
+  recurse(ary)
+  return flat
 }
 
-function isGive (op) {
-  return op.type === giveType 
+// Save calling context to more easily find
+// where the API was called from in case of errors
+function wrap (cb, cbLen, args) {
+  if (typeof cb !== 'function') 
+    throw new Error("Invalid callback " + cb)
+
+  // Do not wrap multiple times, to preserve only
+  // the first entry point into the API
+  // and ignore API calls made from within
+  if (cb.wrapped === true) return cb
+
+  // Save calling context, to know what
+  // code triggered an error
+  var caller = new Error('Caller context:').stack
+
+  // Wrap the callback with the proper number of arguments
+  // to make function calls faster
+  if (cbLen === 1) {
+    function wrapped (err) {
+      if (err) {
+        err.caller = caller
+        err.args = args
+      }
+      cb(err)
+    }
+  } else if (cbLen === 2) {
+    function wrapped (err, a1) {
+      if (err) {
+        err.caller = caller
+        err.args = args
+      }
+      cb(err, a1)
+    }
+  } else if (cbLen === 3) {
+    function wrapped (err, a1, a2) {
+      if (err) {
+        err.caller = caller
+        err.args = args
+      }
+      cb(err, a1, a2)
+    }
+  } else if (cbLen === 4) {
+    function wrapped (err, a1, a2, a3) {
+      if (err) {
+        err.caller = caller
+        err.args = args
+      }
+      cb(err, a1, a2, a3)
+    }
+  // The API does not expect callbacks with more than 4
+  // arguments
+  } else {
+    throw new Error("Unsupported arguments number for " +
+                    "callback")
+  }
+
+  wrapped.wrapped = true
+  return wrapped
 }
 
-function isBurn (op) {
-  return op.type === burnType
+function causes (reasons, err) {
+  if (typeof reasons === "string") 
+    err[reasons] = true
+  else 
+    reasons.forEach((r) => err[r] = true)
+  return err
 }
 
-function isFlag (op) {
-  return op.type === flagType
-}
-
-function isUnflag (op) {
-  return op.type === unflagType
-}
-
-function isOp (op) {
-  return isCreate(op) || isGive(op) || isBurn(op)
-}
-
-// **************************** formatOp (msg) ***************************
-// Check that `msg` correctly follows the expected operation format for each
+// **************************** formatOp (op) ***************************
+// Check that `op` correctly follows the expected operation format for each
 // operation type, synchronously. If format is incorrect, returns an
 // error with the first format check failed. If format is correct, returns
 // null.
 
-function formatCreate (msg) {
-  var op = msg.value.content 
+function formatCreate (op) {
+  if (op.type !== util.createType)
+    return causes('type',
+             new Error("Invalid type '" + op.type + "' for operation " + 
+                       JSON.stringify(op) + ", should be '" + 
+                       util.createType + "'"))
 
   if (typeof op.amount !== "number") 
-    return new Error("Invalid amount '" + op.amount + "', should be a number")
+    return causes('amount', 
+             new Error("Invalid amount '" + op.amount + "', for operation " +
+                       JSON.stringify(op) + ", should be a number"))
 
-  if (typeof op.currency !== "string") 
-    return new Error("Invalid currency '" + op.currency + "', should be a string")
+  if (typeof op.name !== "string") 
+    return causes('name', 
+             new Error("Invalid name '" + op.name + "', for operation " + 
+                      JSON.stringify(op) + ", should be a string"))
 
-  if (typeof op.description !== "string" && op.description !== null)
-    return new Error("Invalid description '" + op.description + "', should be an SSB_MSG_ID or null")
+  if (op.name.length > NAMELENGTH) 
+    return causes('name',
+             new Error("Invalid name of length " + op.name.length + 
+                     " for operation " + JSON.stringify(op) + 
+                     ", should be less or equal to " + NAMELENGTH))
 
-  if (typeof op["smallest-unit"] !== "number")
-    return new Error("Invalid smallest-unit '" + op["smallest-unit"] + "', should be a number")
+  if (typeof op.unit !== "string") 
+    return causes('unit',
+             new Error("Invalid unit '" + op.unit + "' for operation " + 
+                     JSON.stringify(op) + ", should be a string"))
 
-  if (typeof op["token-hash"] !== "string")
-    return new Error("Invalid token-hash '" + op["token-hash"] + "', should be a string")
+  if (op.unit.length > UNITLENGTH) 
+    return causes('unit',
+             new Error("Invalid unit of length " + op.unit.length + 
+                     " for operation " + JSON.stringify(op) +
+                     ", should be less or equal to " + UNITLENGTH))
+
+  if (!ref.isMsgId(op.description)  && op.description !== null)
+    return causes('description',
+             new Error("Invalid description '" + op.description + 
+                     " for operation " + JSON.stringify(op) +
+                     ", should be an SSB_MSG_ID or null"))
+
+  if (typeof op.decimals !== "number")
+    return causes('decimals',
+             new Error("Invalid decimals '" + op.decimals + "' " +
+                     " for operation " + JSON.stringify(op) + 
+                     ", should be a number"))
+
+  if (op.decimals === Infinity || op.decimals === -Infinity)
+    return causes('decimals',
+             new Error("Invalid decimals '" + op.decimals + "' " +
+                     " for operation " + JSON.stringify(op) + 
+                     ", should be finite"))
+
+  if (Math.round(op.decimals) !== op.decimals)
+    return causes('decimals',
+             new Error("Invalid decimals '" + op.decimals + "' " +
+                     " for operation " + JSON.stringify(op) + 
+                     ", should be an integer"))
+
+  if (op.decimals < 0 || op.decimals > 32)
+    return causes('decimals',
+             new Error("Invalid decimals '" + op.decimals + "' " +
+                     " for operation " + JSON.stringify(op) + 
+                     ", should be an integer between 0 and 32 inclusive"))
+
+  if (typeof op.tokenType !== "string")
+    return causes('tokenType',
+             new Error("Invalid tokenType " + op.tokenType + 
+                     " for operation " + JSON.stringify(op) + 
+                     ", should be a string"))
+
+  if (op.tokenType.length > TOKENTYPELENGTH)
+    return causes('tokenType',
+             new Error("Invalid tokenType of length " + op.tokenType.length + 
+                     " for operation " + JSON.stringify(op) +
+                     ", should be less or equal to " + TOKENTYPELENGTH))
+
+  if (!(op.amount > 0))
+    return causes('amount',
+             new Error("Invalid amount '" + op.amount + "', " +
+                     " for operation " + JSON.stringify(op) + 
+                     ", should be positive"))
+
+  for (var i = 0; i < op.name.length; ++i) {
+    var c = op.name[i]
+    if (ALLOWEDCHARS.indexOf(c) < 0)
+      return causes('name', 
+               new Error("Invalid character '" + c + "' in name " +
+                       " for operation " + JSON.stringify(op) + 
+                       ", expected only characters within '" + 
+                       ALLOWEDCHARS + "'"))
+  }
+
+  for (var i = 0; i < op.unit.length; ++i) {
+    var c = op.unit[i]
+    if (ALLOWEDCHARS.indexOf(c) < 0)
+      return causes('unit',
+               new Error("Invalid character '" + c + "' in unit," +
+                       " for operation " + JSON.stringify(op) + 
+                       ", expected only characters within '" + 
+                       ALLOWEDCHARS + "'"))
+  }
+
+  var shifted = Math.pow(10,op.decimals)*op.amount
+  if (Math.trunc(shifted) !== shifted)
+    return causes(['amount', 'decimals'],
+               new Error("Invalid (amount,decimals) combination (" +
+                     JSON.stringify(op.amount) + "," + 
+                     JSON.stringify(op.decimals) + ") " + 
+                     " for operation " + JSON.stringify(op) + 
+                     ", more decimals in amount than supported"))
 
   return null
 }
 
-function formatGive (msg) {
-  var op = msg.value.content
-  
-  if (typeof op["token-hash"] !== "string")
-    return new Error("Invalid token-hash '" + op["token-hash"] + "', should be a string")
+// Format checks common to formatGive and formatBurn
+function formatTransfer (op) {
+  if (typeof op.tokenType !== "string")
+    return new Error("Invalid tokenType '" + op.tokenType + "' " +
+                     " for operation " + JSON.stringify(op) + 
+                     ", should be a string")
 
-  if (!Array.prototype.isPrototypeOf(op.source))
-    return new Error("Invalid source '" + JSON.stringify(op.source) + "', should be an array")
+  if (op.tokenType.length > TOKENTYPELENGTH)
+    return new Error("Invalid tokenType of length " + op.tokenType.length + 
+                     " for operation " + JSON.stringify(op) +  
+                     ", should be less or equal to " + TOKENTYPELENGTH)
 
-  //  The sum of the amounts of give.source.source(s) is equal
-  //  to the give.source.amount
+  if (typeof op.amount !== "number")
+    return new Error("Invalid amount " + JSON.stringify(op.amount) + 
+                     " for operation " + JSON.stringify(op) +
+                     ", should be a number")
+
+  if (!Array.prototype.isPrototypeOf(op.sources))
+    return new Error("Invalid sources '" + JSON.stringify(op.sources) + "' " +
+                     " for operation " + JSON.stringify(op) +
+                     ", should be an array")
+
+  // Bounded
+  if (op.sources.length > 10)
+    return new Error("Too many sources for operation " + JSON.stringify(op) +
+                      ", expected 10 sources maximum")
+
+  // Check sources, while computing total amount from sources
   var total = 0
-  for (var i = 0; i < op.source.length; ++i) {
-    var s = op.source[i]
+  for (var i = 0; i < op.sources.length; ++i) {
+    var s = op.sources[i]
     if (typeof s !== "object") 
-      return new Error("Invalid source[" + i + "]: '" + JSON.stringify(s) + "', should be an object")
+      return new Error("Invalid sources[" + i + "]: '" + JSON.stringify(s) + 
+                       "' for operation " + JSON.stringify(op) + 
+                       ", should be an object")
 
     if (typeof s.amount !== "number")
-      return new Error("Invalid source[" + i + "].amount '" + s.amount + "', should be a number")
+      return new Error("Invalid sources[" + i + "].amount '" + s.amount + 
+                       "' for operation " + JSON.stringify(op) +
+                       ", should be a number")
+
+    if (s.amount <= 0)
+      return new Error("Invalid sources[" + i + "].amount '" + s.amount + 
+                       "' for operation " + JSON.stringify(op) +
+                       ", should be strictly positive")
 
     if (!ref.isMsgId(s.id))
-      return new Error("Invalid source[" + i + "].id '" + s.id + "', should be an SSB_MSG_ID")
+      return new Error("Invalid sources[" + i + "].id '" + s.id + "' " + 
+                       " for operation " + JSON.stringify(op) +
+                       ", should be an SSB_MSG_ID")
+
+    if (Object.keys(s).length > 2) 
+      return new Error("Invalid sources[" + i + "]: " + JSON.stringify(s) +
+                       " for operation " + JSON.stringify(op) +
+                       ", only 'id' and 'amount' properties should be present")
 
     total += s.amount
   }
+
+  // Consistent Amount
   if (op.amount !== total) 
-    return new Error("Invalid amount " + op.amount + ", inconsistent with total from sources (" + total + ")")
+    return new Error("Invalid amount " + op.amount + 
+                     " for operation " + JSON.stringify(op) +
+                     ", inconsistent with total from sources (" + total + ")")
 
-  if (!ref.isFeed(s.recipient))
-    return new Error("Invalid recipient " + op.recipient + ", should be an SSB_LOG_ID")
+  // Unique
+  sources = {}
+  op.sources.forEach(function (s) {
+    sources[s.id] = s.amount
+  })
+  if (Object.keys(sources).length < op.sources.length)
+    return new Error("Multiple sources with same id " +
+                        " for operation " + JSON.stringify(op) + 
+                        ", each should be unique")
 
-  return null
-}
-
-function formatBurn (msg) {
-  var op = msg.value.content
-
-  if (typeof op["token-hash"] !== "string")
-    return new Error("Invalid token-hash '" + op["token-hash"] + "', should be a string")
-
-  if (!Array.prototype.isPrototypeOf(op.source))
-    return new Error("Invalid source '" + JSON.stringify(op.source) + "', should be an array")
-
-  for (var i = 0; i < op.source.length; ++i) {
-    var s = op.source[i]
-    if (typeof s !== "string") 
-      return new Error("Invalid source[" + i + "]: '" + JSON.stringify(s) + "', should be a string")
-  }
+  if (!ref.isMsgId(op.description)  && op.description !== null)
+    return new Error("Invalid description '" + op.description + 
+                     " for operation " + JSON.stringify(op) +
+                     ", should be an SSB_MSG_ID or null")
 
   return null
 }
 
-function formatFlag (msg) {
+function formatGive (op) {
+  if (op.type !== util.giveType)
+    return new Error("Invalid type '" + op.type + "' " + 
+                     " for operation " + JSON.stringify(op) + 
+                     ", should be '" + util.giveType + "'") 
+
+  if (!ref.isFeed(op.receiver))
+    return new Error("Invalid receiver " + op.receiver + 
+                     " for operation " + JSON.stringify(op) +
+                     ", should be an SSB_LOG_ID")
+
+  return formatTransfer(op)
+}
+
+function formatBurn (op) {
+  if (op.type !== util.burnType)
+    return new Error("Invalid type '" + op.type + "' " + 
+                     " for operation " + JSON.stringify(op) + 
+                     ", should be '" + util.burnType + "'") 
+
+  return formatTransfer(op)
+}
+
+function formatFlag (op) {
   throw new Error("Unimplemented")
 }
 
-function formatUnflag (msg) {
+function formatUnflag (op) {
   throw new Error("Unimplemented")
 }
 
 function format (ssb, api) {
-  function checkFormat (msg) {
-    var op = msg.value.content
-    if (isCreate(op)) return formatCreate(msg)
-    else if (isGive(op)) return formatGive(msg)
-    else if (isBurn(op)) return formatBurn(msg)
-    else if (isFlag(op)) return formatFlag(msg)
-    else if (isUnflag(op)) return formatUnflag(msg)
-    else new Error("Invalid ssb-tokens operation with type '" + op.type + "')")
+  function checkFormat (op, opts) {
+    if (typeof opts === 'undefined')
+      opts = {}
+
+    if (util.isCreate(op)) return formatCreate(op, opts)
+    else if (util.isGive(op)) return formatGive(op, opts)
+    else if (util.isBurn(op)) return formatBurn(op, opts)
+    else if (util.isFlag(op)) return formatFlag(op, opts)
+    else if (util.isUnflag(op)) return formatUnflag(op, opts)
+    else return new Error("Invalid ssb-tokens operation with type '" + op.type + "'")
   }
 
   checkFormat.create = formatCreate
@@ -141,43 +355,266 @@ function format (ssb, api) {
   return checkFormat
 }
 
+function reqMsg(msgValue) {
+  if (!msgValue.author || !ref.isFeed(msgValue.author))
+    return new Error("Invalid msgValue.author '" + msgValue.author + "'" + 
+                        " for message " + JSON.stringify(msgValue) +
+                        ", expected SSB Log ID")
+
+  if (!msgValue.content || typeof msgValue.content !== "object")
+    return new Error("Invalid msgValue.content '" + msgValue.content + "'" +
+                      " for message " + JSON.stringify(msgValue) +   
+                      ", expected object")
+
+  return null
+}
+
 
 function requirements (ssb, api) {
 
-  // **************************** reqCreate (msg, cb(err, msg)) ****************
-  // Check that `msg` requirements for <op> are satisfied, asynchronously. If 
-  // all requirements are satisfied, invoke `cb(null, msg)`. Otherwise, invoke
-  // `cb(err, msg)` where `err` is the first requirement error encountered.
+  // *********** reqCreate (msgValue, opts, cb(err, msgValue)) ****************
+  // Check that `msgValue` requirements for <op> are satisfied, asynchronously.
+  // If all requirements are satisfied, invoke `cb(null, msgValue)`. Otherwise,
+  // invoke `cb(err, msgValue)` where `err` is the first requirement error
+  // encountered. `msgValue` is the same as input.
 
-  function reqCreate (msg, cb) {
+  function reqCreate (msgValue, opts, cb) {
+    cb = cb || opts
+    if (api._debugFlag)
+      cb = wrap(cb, 2, [msgValue, opts])
+    if (typeof opts === 'function')
+      opts = {}
 
+    var err = reqMsg(msgValue) 
+    if (err) return cb(err)
+    
+    var op = msgValue.content
+    var err = api.validate.format.create(op)
+    if (err) return cb(err)
+
+    // Unique unforgeable tokenType
+    var expected = ssb.tokens.tokenType(msgValue.author, op)
+    if (op.tokenType !== expected)
+      return cb(new Error("Invalid token type '" + op.tokenType + 
+                          "', expected '" + expected + "'"))
+
+    return cb(null, msgValue)
   }
 
-  function reqGive (msg, cb) {
+  function reqTransfer (msgValue, opts, cb) {
+    var op = msgValue.content
 
+    function get (src, cb) {
+      ssb.get({id: src.id, meta: true},
+        function (err, msg) {
+          if (err && err.notFound) {
+            // Compute all missing sources now that
+            // we know there is at least one not found
+            return api.ancestors(op.sources, cb) 
+          }
+
+          return cb(err, { 
+            id: src.id, 
+            amount: src.amount, 
+            msg: msg 
+          })
+        }
+      )
+    }
+
+    // Get and check all sources
+    pull(
+      pull.values(op.sources),
+      pull.asyncMap(get),
+      pull.asyncMap((src, cb) => {
+        var sId = src.msg.key
+        var sOp = src.msg.value.content
+
+        // Valid
+        if (!util.isCreate(sOp) && !util.isGive(sOp)) 
+          return cb(new Error("Invalid source " + sId + 
+                              " for message " + JSON.stringify(msgValue) + 
+                              ", expected a create or give operation"))
+
+        api.valid(src.msg, opts, 
+          (err, msg) => {
+            if (err) return cb(err)
+            else return cb(null, src)
+          }
+        )
+      }),
+      pull.asyncMap((src, cb) => {
+        var sId = src.msg.key
+        var sOp = src.msg.value.content
+        var sAuthor = src.msg.value.author 
+
+        // Consistent TokenType
+        if (sOp.tokenType !== op.tokenType)
+          return cb(new Error("Invalid source " + sId + " for message " +
+            JSON.stringify(msgValue) + ", expected token type consistent with " 
+            + op.tokenType))
+
+        // Consistent receiver
+        if (util.isGive(sOp) && sOp.receiver !== msgValue.author)
+          return cb(new Error("Invalid 'give' source " + sId + " for message " +
+            JSON.stringify(msgValue) + ", expected receiver to be " +
+            msgValue.author))
+
+        // Consistent Creator 
+        if (util.isCreate(sOp) && sAuthor !== msgValue.author) 
+          return cb(new Error("Invalid 'create' source " + sId + " for message " +
+            JSON.stringify(msgValue) + ", expected author to be " +
+            msgValue.author))
+
+        return cb(null, src)
+      }),
+      pull.onEnd(function (err) {
+        if (err) return cb(err)
+        else cb(null, msgValue)
+      })
+    )
   }
 
-  function reqBurn (msg, cb) {
+  function reqGive (msgValue, opts, cb) {
+    cb = cb || opts
+    if (api._debugFlag)
+      cb = wrap(cb, 2, [msgValue, opts])
+    if (typeof opts === 'function')
+      opts = {}
 
+    var err = reqMsg(msgValue) 
+    if (err) return cb(err)
+    
+    var err = api.validate.format.give(msgValue.content)
+    if (err) return cb(err)
+
+    reqTransfer(msgValue, opts, function (err, msgValue) {
+      if (err) return cb(err)
+
+      pull(
+        pull.values(msgValue.content.sources),
+        pull.asyncMap(function (s, cb) {
+          var seqno = msgValue.sequence || Infinity
+          var owner = msgValue.author
+          api.unspent(s.id, owner, seqno, function (err, unspent, msg) {
+            if (err) 
+              return cb(new Error("Error retrieving unspent for source " +
+                                   JSON.stringify(s) + " in message value " +
+                                   JSON.stringify(msgValue, null, 2) + ":\n" +
+                                   err.message))
+
+            if (unspent < s.amount)
+              return cb(new Error("Insufficient unspent value of " + unspent + 
+                                  " for owner " + owner + " at sequence no " + 
+                                  seqno + " to supply source " + 
+                                  JSON.stringify(s) + " in message value " + 
+                                  JSON.stringify(msgValue, null, 2)))
+
+            return cb(null, s)
+          })
+        }),
+        pull.onEnd(function (err) {
+          cb(err, msgValue)
+        })
+      )
+    })
   }
 
-  function reqFlag (msg, cb) {
+  function reqBurn (msgValue, opts, cb) {
+    cb = cb || opts
+    if (api._debugFlag)
+      cb = wrap(cb, 2, [msgValue, opts])
+    if (typeof opts === 'function')
+      opts = {}
+    
+    var err = reqMsg(msgValue) 
+    if (err) return cb(err)
 
+    var err = api.validate.format.burn(msgValue.content)
+    if (err) return cb(err)
+
+    reqTransfer(msgValue, opts, function (err, msgValue) {
+      if (err) return cb(err)
+
+      pull(
+        pull.values(msgValue.content.sources),
+        pull.asyncMap(function (s, cb) {
+          var seqno = msgValue.sequence || Infinity
+          var owner = msgValue.author
+          api.unspent(s.id, owner, seqno, function (err, unspent, msg) {
+            if (err) 
+              return cb(new Error("Error retrieving unspent for source " +
+                                   JSON.stringify(s) + " in message value " +
+                                   JSON.stringify(msgValue, null, 2) + ":\n" +
+                                   err.message))
+
+            var adjective = (unspent === 0) ? "Completely" : "Partially"
+            if (unspent !== s.amount)
+              return cb(new Error(adjective + " spent source " +
+                                  JSON.stringify(s) +
+                                  " for owner " + owner + " at sequence no " + 
+                                  seqno + " in message value " + 
+                                  JSON.stringify(msgValue, null, 2)))
+
+            return cb(null, s)
+          })
+        }),
+        pull.onEnd(function (err) {
+          cb(err, msgValue)
+        })
+      )
+    })
   }
 
-  function reqUnflag (msg, cb) {
+  function reqFlag (msgValue, opts, cb) {
+    cb = cb || opts
+    if (api._debugFlag)
+      cb = wrap(cb, 2, [msgValue, opts])
+    if (typeof opts === 'function')
+      opts = {}
+    
+    var err = reqMsg(msgValue) 
+    if (err) return cb(err)
 
+    var err = api.validate.format.flag(msgValue.content)
+    if (err) return cb(err)
+
+    // TODO: Requirements
+
+    return cb(null, msgValue)
   }
 
-  function checkReq (msg, cb) {
-    var op = msg.value.content
+  function reqUnflag (msgValue, opts, cb) {
+    cb = cb || opts
+    if (api._debugFlag)
+      cb = wrap(cb, 2, [msgValue, opts])
+    if (typeof opts === 'function')
+      opts = {}
 
-    if (isCreate(op)) return reqCreate(msg, cb)
-    else if (isGive(op)) return reqGive(msg, cb)
-    else if (isBurn(op)) return reqBurn(msg, cb)
-    else if (isFlag(op)) return reqFlag(msg, cb)
-    else if (isUnflag(op)) return reqUnflag(msg, cb)
-    else return cb(new Error("Requirements: Invalid ssb-tokens operation " + 
+    var err = reqMsg(msgValue) 
+    if (err) return cb(err)
+
+    var err = api.validate.format.unflag(msgValue.content)
+    if (err) return cb(err)
+
+    // TODO: Requirements
+
+    return cb(null, msgValue)
+  }
+
+  function checkReq (msgValue, opts, cb) {
+    var cb = cb || opts
+    if (typeof opts === 'function')
+      opts = {}
+
+    var op = msgValue.content
+
+    if (util.isCreate(op)) return reqCreate(msgValue, opts, cb)
+    else if (util.isGive(op)) return reqGive(msgValue, opts, cb)
+    else if (util.isBurn(op)) return reqBurn(msgValue, opts, cb)
+    else if (util.isFlag(op)) return reqFlag(msgValue, opts, cb)
+    else if (util.isUnflag(op)) return reqUnflag(msgValue, opts, cb)
+    else return cb(new Error("Invalid ssb-tokens operation " + 
                              "with type '" + op.type + "'"))
   }
 
@@ -190,282 +627,1081 @@ function requirements (ssb, api) {
   return checkReq
 }
 
-
-
-
-function tokenProperties (ssb, tokenHash, cb) {
-  pull(
-    ssb.query.read({ 
-      query: [{ "$filter": { value: { content: { type: createType, "token-hash": tokenHash } } } }],
-      limit: 1
-    }),
-    pull.collect( (err, ary) => {
-      if (err) cb(err)
-      else {
-        if (ary.length < 1) {
-          cb(new Error("Token hash '" + tokenHash + "' not found."))
-        } else {
-          var tok = ary[0].value.content
-          cb(null, { 
-            currency: tok.currency,
-            description: tok.description,
-            "smallest-unit": tok["smallest-unit"],
-            "token-hash": tok["token-hash"]
-          })
-        }
-      }
-    } )
-  )
-}
-
-function consistentTokenHashes (ssb, source, cb) {
-  log('consistentTokenHashes')
-  var hashes = { }
-  pull(
-    pull.values(source),
-    pull.asyncMap((s, cb) => {
-      if (s.id) ssb.get({ id: s.id, meta: true }, (err, msg) => {
-        if (err) cb(err)
-        else if (!isOp(msg.value.content)) cb(new Error("Invalid ssb-tokens operation id " + msg.key))
-        else cb(null, { hash: msg.value.content['token-hash'], value: 'id: ' + msg.key })
-      }) 
-      else cb(!s['token-hash'], { hash: s['token-hash'], value: 'token-hash: ' + s['token-hash'] })
-    }),
-    pull.reduce(
-      (acc,x) => { 
-        if (typeof x === 'object') {
-          hashes[x.hash] = x.value
-        }
-
-        if (typeof acc === 'undefined') return x.hash
-        else if (acc === x.hash) return acc
-        else return null
-      },
-      undefined,
-      (err, acc) => {
-        if (err) cb(new Error("Inconsistent properties between sources " + Object.values(hashes)))
-        else cb(null,acc)
-      }
-    )
-  )
-}
-
-function sourceIsMultiple (smallestUnit, source, cb) {
-  log('sourceIsMultiple')
-  for (var i = 0; i < source.length; ++i) {
-    var amount = source.amount
-    if (typeof amount === 'number' &&
-        (Math.round(amount / smallestUnit) * smallestUnit !== amount)) {
-      return cb(new Error("Source amount '" + amount + "' is not a multiple of '" + smallestUnit + "'"))
-    }
-  } 
-  return cb(null)
-}
-
-function sourceEnoughUnspent (token, source, cb) {
-  log('sourceEnoughUnspent')
-
-  var cIdx = token.created.length > 0 ? -1 : 0
-  var rIdx = token.received.length > 0 ? -1 : 0
-  function next () {
-    if (cIdx < token.created.length - 1) 
-      return token.created[cIdx += 1]
-    if (rIdx < token.received.length - 1) 
-      return token.received[rIdx += 1]
-    return null
+function tokenType (author, props) {
+  props = props || author
+  if (typeof author !== "string") {
+    author = props.author
   }
-  // 4. Replace 'null' in sources by the unspent tokens of
-  //    of the corresponding operation
-  var filledSource = []
-  for (var i = 0; i < source.length; ++i) {
-    var s = source[i]
-    if (s.id) {
-      if (typeof s.amount === "number" && 
-          token.all[s.id].unspent >= s.amount) {
-        token.all[s.id].unspent -= s.amount
-        token.balance -= s.amount
-        filledSource.push(s)
-      } else if (s.amount === null || 
-                 (typeof s.amount === 'undefined')) {
-        var amount = token.all[s.id].unspent
-        token.all[s.id].unspent -= amount
-        token.balance -= amount
-        filledSource.push({ amount: amount, id: s.id })
-      }
-    } else if (s['token-hash']) {
-      if (source.length > 1) {
-        return cb(new Error('Invalid source, "token-hash" can only be used on a single source.'))
-      } else if ((typeof s.amount === "number" &&
-          token.balance < s.amount) ||
-          token.balance === 0) {
-        return cb(new Error('Insufficient unspent funds from owner ' + token.owner + 
-                            ' to give ' + JSON.stringify(s)))
-      }
-
-      var amount = ((typeof s.amount === 'undefined') || 
-                     s.amount === null) ? token.balance : s.amount
-      while (amount > 0) {
-        var op = next()
-        if (op === null) {
-          return cb(new Error('Internal error: no operation left to create a source'))
-        } else if (op.unspent > 0) {
-          var a = Math.min(op.unspent, amount)
-          op.unspent -= a
-          token.balance -= a
-          amount -= a
-          filledSource.push({ amount: a, id: op.id }) 
-        }
-      }
-    } else {
-        return cb(new Error('Internal error, source ' + JSON.stringify(s) + 
-                            ' has no id or token-hash.'))
-    }
-  }
-
-  cb(null, filledSource)
+  return String(crypto.createHash('sha256')
+        .update(String(author))
+        .update(String(props.name))
+        .update(String(props.unit))
+        .update(String(props.decimals))
+        .update(String(props.description))
+        .digest('hex').slice(0,16))
 }
 
-function isCorrectSchema (op) { 
-  if (isCreate(op)) {
-    if (typeof op.amount !== "number") 
-      return new Error("Invalid amount '" + op.amount + "', should be a number")
+function types (ssb, api) {
+  return function types (options, cb) {
+    cb = cb || options
+    if (typeof options === "function")
+      options = { match: {} }
 
-    if (typeof op.currency !== "string") 
-      return new Error("Invalid currency '" + op.currency + "', should be a string")
+    if (typeof cb !== "function")
+      throw new Error("types: Invalid callback " + cb +
+                      ", expected a function with signature " +
+                      "cb(err, types)")
 
-    if (typeof op.description !== "string" && op.description !== null)
-      return new Error("Invalid description '" + op.description + "', should be an SSB_MSG_ID or null")
+    if (api._debugFlag)
+      cb = wrap(cb, 2, [options])
 
-    if (typeof op["smallest-unit"] !== "number")
-      return new Error("Invalid smallest-unit '" + op["smallest-unit"] + "', should be a number")
+    if (typeof options !== "object")
+      return cb(new Error("types: Invalid options " + JSON.stringify(options) +
+                          ", expected an object"))
+    
+    if (typeof options.validate === "undefined")
+        options.validate = true
 
-    if (typeof op["token-hash"] !== "string")
-      return new Error("Invalid token-hash '" + op["token-hash"] + "', should be a string")
+    if (options.match) {
+      if (typeof options.match !== "object") 
+        return cb(new Error("types: Invalid options.match " + 
+                            JSON.stringify(options.match) +
+                            ", expected an object"))
 
-  } else if (isGive(op)) {
-    if (typeof op["token-hash"] !== "string")
-      return new Error("Invalid token-hash '" + op["token-hash"] + "', should be a string")
+      if (options.match.author && !ref.isFeed(options.match.author))
+        return cb(new Error("types: Invalid options.match.author " + 
+                            JSON.stringify(options.match.author) +
+                            ", expected valid SSB Log ID"))
 
-    if (!Array.prototype.isPrototypeOf(op.source))
-      return new Error("Invalid source '" + JSON.stringify(op.source) + "', should be an array")
+      if (options.match.tokenType && 
+          typeof options.match.tokenType !== "string")
+        return cb(new Error("types: Invalid options.match.tokenType " +
+                             JSON.stringify(options.match.tokenType) +
+                            ", expected a string"))
 
-    //  The sum of the amounts of give.source.source(s) is equal
-    //  to the give.source.amount
-    var total = 0
-    for (var i = 0; i < op.source.length; ++i) {
-      var s = op.source[i]
-      if (typeof s !== "object") 
-        return new Error("Invalid source[" + i + "]: '" + JSON.stringify(s) + "', should be an object")
+      var createMsg = { 
+        type: util.createType,
+        amount: 1,
+        decimals: options.match.decimals || 0,
+        description: options.match.description || null,
+        name: options.match.name || '',
+        unit: options.match.unit || ''
+      }
 
-      if (typeof s.amount !== "number")
-        return new Error("Invalid source[" + i + "].amount '" + s.amount + "', should be a number")
+      if (options.match.tokenType)
+        createMsg.tokenType = options.match.tokenType
+      else
+        createMsg.tokenType = ssb.tokens.tokenType(null, createMsg)
 
-      if (!ref.isMsgId(s.id))
-        return new Error("Invalid source[" + i + "].id '" + s.id + "', should be an SSB_MSG_ID")
+      var err = ssb.tokens.validate.format(createMsg)
+      if (err) {
+        if (err.decimals) 
+          return cb(causes('decimals',
+                      new Error("types: Invalid options.match.decimals " + 
+                              JSON.stringify(options.match.decimals) + 
+                              ", expected an integer between 0 and 32 inclusive")))
 
-      total += s.amount
+        if (err.description)
+          return cb(causes('description',
+                      new Error("types: Invalid options.match.description " +
+                              JSON.stringify(options.match.description) +
+                              ", expected a SSB Msg ID")))
+
+        if (err.name)
+          return cb(causes('name',
+                      new Error("types: Invalid options.match.name " +
+                              JSON.stringify(options.match.name) +
+                              ", expected a string with " + NAMELENGTH + 
+                              " characters or less within " + ALLOWEDCHARS)))
+
+        if (err.unit)
+          return cb(cause('unit',
+                      new Error("types: Invalid options.match.unit " + 
+                              JSON.stringify(options.match.unit) + 
+                              ", expected a string with " + UNITLENGTH +
+                              " characters or less within " + ALLOWEDCHARS)))
+      }
     }
-    if (op.amount !== total) 
-      return new Error("Invalid amount " + op.amount + ", inconsistent with total from sources (" + total + ")")
 
-    if (!ref.isFeed(s.recipient))
-      return new Error("Invalid recipient " + op.recipient + ", should be an SSB_LOG_ID")
+    var types = {}
+    var q = { value: { content: { type: util.createType } } }
+    if (options.match.author)
+      q.value.author = options.match.author
 
-  } else if (isBurn(op)) {
-    if (typeof op["token-hash"] !== "string")
-      return new Error("Invalid token-hash '" + op["token-hash"] + "', should be a string")
+    if (options.match.decimals)
+      q.value.content.decimals = options.match.decimals
 
-    if (!Array.prototype.isPrototypeOf(op.source))
-      return new Error("Invalid source '" + JSON.stringify(op.source) + "', should be an array")
+    if (options.match.description)
+      q.value.content.description = options.match.description
 
-    for (var i = 0; i < op.source.length; ++i) {
-      var s = op.source[i]
-      if (typeof s !== "string") 
-        return new Error("Invalid source[" + i + "]: '" + JSON.stringify(s) + "', should be a string")
-    }
+    if (options.match.name)
+      q.value.content.name = options.match.name
 
-  } else {
-    return new Error("Invalid type " + op.type)
-  }
-}
+    if (options.match.unit)
+      q.value.content.unit = options.match.unit
 
-// Return the "tangle", i.e. directed acyclic graph of sources from operation 'id' to 
-// the roots, as a dictionary { id: { src1: true, ... }, ... }
-function tangle (ssb, ids, cb) {
-  var sources = { }
-  var queue = [ ]
-  var count = 0
+    if (options.match.tokenType)
+      q.value.content.tokenType = options.match.tokenType 
 
-  ids.forEach(function (id) {
-    sources[id] = {}
-    queue.push(id)
-  })
-  
-  function next () {
-    var id = queue.pop()
-    ssb.get(id, { meta: true }, function (err, msg) {
-      if (err) return cb(err)
-      count += 1
+    pull(
+      ssb.query.read({ query: [{ "$filter": q }] }),
+      pull.asyncMap(function (msg_, cb) {
+        if (!options.validate) 
+          return cb(null, msg_.value)
 
-      var op = msg.value.content 
-      if (!isOp(op)) return cb(new Error("Invalid operation " + JSON.stringify(op)))
-      if (op.source) {
-        op.source.forEach(function (s) {
-          var sId = (typeof sId === "string") ? sId : s.id
-          if (!sources[sId]) {
-            sources[sId] = {}
-            queue.push(sId)
-          }
-
-          sources[id][sId] = true
+        api.valid(msg_, function (err, msg_) {
+          if (err) return cb(null, null)
+          return cb(null, msg_.value)
         })
-      }
+      }),
+      pull.filter( (x) => x !== null ),
+      pull.drain(function (msgValue) {
+        var author = msgValue.author
+        var op = msgValue.content
+        var tokenType = op.tokenType
 
-      if (queue.length > 0)
-        next()
-      else if (count === Object.keys(sources).length)
-        return cb(null, sources)
+        if (tokenType && !types[tokenType])
+          types[tokenType] = {
+            author: author,
+            decimals: op.decimals,
+            description: op.description,
+            name: op.name,
+            unit: op.unit,
+            tokenType: tokenType
+          }
+      }, function (err) {
+        if (err) return cb(err)
+        else return cb(null, types)
+      })
+    )
+  }
+}
+
+function unspent (ssb, api) {
+  return function unspent (msgId, owner, seqno, cb) {
+    cb = cb || seqno
+    if (typeof seqno === "function") {
+      seqno = Infinity
+    }
+
+    if (typeof cb !== "function")
+      throw new Error("unspent: Invalid callback " + cb +
+                      ", expected a function with signature " +
+                      "cb(err, amount, msg)")
+
+    if (api._debugFlag)
+      cb = wrap(cb, 3, [msgId, owner, seqno])
+
+    if (!ref.isMsgId(msgId))
+      return cb(new Error("unspent: Invalid message identifier " + msgId +
+                      ", expected a valid SSB Message ID"))
+
+    if (!ref.isFeed(owner))
+      return cb(Error("unspent: Invalid owner " + owner + 
+                      ", expected valid SSB Log ID"))
+
+
+    if (typeof seqno !== "number" || seqno < 1) {
+      return cb(Error("unspent: Invalid seqno value " + seqno +
+                      ", expected value between 1 and Infinity"))
+    }
+
+    ssb.get({ id: msgId, meta: true }, function (err, msg) {
+      if (err) return cb(err)
+
+      var id = msg.key
+      var op = msg.value.content
+      var author = msg.value.author
+      if (!util.isCreate(op) && !util.isGive(op))
+        return cb(new Error("unspent: Invalid message " + JSON.stringify(msg) + 
+                            ", expected content with create or give " +
+                            "operation"))
+
+      if (util.isCreate(op) && author !== owner)
+        return cb(new Error("unspent: Inconsistent owner " + owner + 
+                            ", for create operation in " + 
+                            JSON.stringify(msg, null, 2) +
+                            ", owner is expected to be the same as author"))
+
+      if (util.isGive(op) && op.receiver !== owner)
+        return cb(new Error("unspent: Inconsistent owner " + owner +
+                            ", for give operation in " + 
+                            JSON.stringify(msg, null, 2) +
+                            ", owner is expected to be the same as receiver"))
+
+      api.valid(msg, function (err, msg) {
+        if (err) return cb(err)
+
+        pull(
+          ssb.query.read({ 
+            query: [{
+              "$filter": {
+                value: {
+                  author: owner,
+                  sequence: { $lt: seqno },
+                  content: {
+                    type: { $in: [ util.giveType, util.burnType ] },
+                    tokenType: op.tokenType
+                  } } } }] }),
+          pull.asyncMap(function (msg_, cb) {
+            api.valid(msg_, function (err, msg_) {
+              if (err) return cb(null, null)
+
+              var op_ = msg_.value.content
+              for (var i = 0; i < op_.sources.length; ++i) {
+                var s_ = op_.sources[i]
+                if (s_.id === id) {
+                  // Exploit the property that s_.id are unique,
+                  // and return before checking the other sources
+                  return cb(null, s_)
+                }
+              } 
+              return cb(null, null)
+            })
+          }),
+          pull.filter( (x) => x !== null ),
+          pull.reduce(
+            (unspent, s_) => unspent - s_.amount,
+            op.amount, 
+            function (err, unspent) {
+              if (err) return cb(err)
+              return cb(null, unspent, msg)
+            }
+          )
+        )
+      })
     })
   }
 }
 
-// Returns a pull source that streams the ancestors of operation id in reverse
-// topological order, i.e. from roots to the immediate ancestors of id such
-// that all the immediate ancestors of an operation are returned before that
-// operation.
-function ancestors (ssb, ids) {
-  var ancestors = null
+function balance (ssb, api) {
+  return function balance (tokenType, owner, cb) {
+    if (typeof cb !== "function")
+      throw new Error("Invalid callback " + cb + 
+                      ", expected callback cb(err, bal)")
 
-  return function source (done, cb) {
-    if (ancestors === null) {
-      tangle(ssb, ids, function (err, sources) {
-        if (err) return cb(err)
+    if (api._debugFlag)
+      cb = wrap(cb, 2, [tokenType, owner])
 
-        ancestors = Object.keys(sources)
-        if (ancestors.length === 0) 
-          return cb(new Error("Invalid sources " + JSON.stringify(sources)))
+    if (typeof tokenType !== "string" || 
+        tokenType.length !== TOKENTYPELENGTH)
+      return cb(new Error("Invalid tokenType " + tokenType +
+                      ", expected string with " + TOKENTYPELENGTH + 
+                      " chars"))
 
-        // Equivalent to Scuttlesort
-        ancestors.sort(function (a,b) {
-          if (sources[a].hasOwnProperty(b)) {
-            return -1
-          } else if (sources[b].hasOwnProperty(a)) {
-            return 1
-          } else {
-            return b.localeCompare(a)
-          }
-        })
+    if (!ref.isFeed(owner))
+      return cb(new Error("Invalid owner " + owner +
+                      ", expected SSB Log ID"))
 
-        return cb(null, ancestors.pop()) 
-      })
-    } else if (ancestors.length > 0) {
-      return cb(null, ancestors.pop()) 
-    } else {
-      return cb(true)
+    var bal = {
+      tokenType: tokenType,
+      owner: owner,
+      amount: 0,
+      created: [],
+      received: [],
+      given: [],
+      burnt: [],
+      unspent: {},
+      missing: {
+        operations: [],
+        sources: {}
+      },
+      all: {}
     }
+
+    pull(
+      many([
+        ssb.query.read({ 
+          query: [{
+            "$filter": {
+              value: {
+                author: owner,
+                content: {
+                  type: { $in: [ util.createType, util.giveType, util.burnType ] },
+                  tokenType: tokenType
+                } } } }] }),
+        ssb.query.read({ 
+          query: [{
+            "$filter": {
+              value: {
+                content: {
+                  type: util.giveType,
+                  receiver: owner,
+                  tokenType: tokenType
+                } } } }] }),
+      ]),
+      pull.asyncMap(function (msg_, cb) {
+        api.valid(msg_, function (err, msg_) {
+          if (err) {
+            if (err.notFound) {
+              msg_.missingSources = true
+              if (err.sources)  msg_.sources = err.sources
+              return cb(null, msg_)
+            } else return cb(null, null)
+          } else return cb(null, msg_)
+        })
+      }),
+      pull.filter( (x) => x !== null ),
+      pull.drain(
+        function (msg_) {
+          var id_ = msg_.key
+          var author_ = msg_.value.author
+          var op_ = msg_.value.content
+          if (msg_.missingSources) {
+            if (msg_.sources) {
+              for (var i = 0; i < msg_.sources.length; ++i) {
+                var id = msg_.sources[i]
+                bal.missing.sources[id] = true
+              }
+            }
+            bal.missing.operations.push(id_)
+          } else if (util.isCreate(op_)) {
+            bal.amount += op_.amount
+            bal.created.push(id_)
+          } else if (util.isGive(op_)) {
+            if (author_ === owner && !bal.all[id_]) {
+              bal.amount -= op_.amount
+              bal.given.push(id_)
+            }
+
+            if (op_.receiver === owner && !bal.all[id_]) {
+              bal.amount += op_.amount
+              bal.received.push(id_)
+            }
+          } else if (util.isBurn(op_)) {
+            bal.amount -= op_.amount
+            bal.burnt.push(id_)
+          }
+          bal.all[id_] = msg_
+        },
+        function (err) {
+          if (err) return cb(err, bal)
+
+          if (bal.amount === 0) return cb(null, bal)
+
+          var positive = bal.created.concat(bal.received)
+          var negative = bal.given.concat(bal.burnt)
+          for (var i = 0; i < positive.length; ++i) {
+            var id = positive[i]
+            var msg = bal.all[id]
+            var op = msg.value.content
+            bal.unspent[id] = {
+              id: id,
+              amount: op.amount,
+              tokenType: tokenType,
+              timestamp: msg.timestamp 
+            }
+          }
+          for (var i = 0; i < negative.length; ++i) {
+            var id = negative[i]
+            var op = bal.all[id].value.content
+            for (var j = 0; j < op.sources.length; ++j) {
+              var s = op.sources[j]
+
+              if (!bal.unspent[s.id]) {
+                var err = new Error("balance internal error: " +
+                                    " Missing source " + s.id + 
+                                    " spent by " + id)
+                err.notFound = true
+                return cb(err)
+              }
+
+              bal.unspent[s.id].amount -= s.amount
+              if (bal.unspent[s.id].amount === 0) 
+                delete bal.unspent[s.id]
+            }
+          }
+
+          var sorted =  Object.values(bal.unspent)
+                          .sort((s1,s2) => s1.timestamp - s2.timestamp)
+          bal.unspent = {} // Put all values in order of timestamp
+          sorted.forEach((s) => bal.unspent[s.id] = s)
+          return cb(null, bal)
+        }
+      )
+    )
   }
 }
 
+function operations (ssb, api) {
+
+  return function operations (options) {
+    options = options || {}
+
+    if (typeof options !== 'object')
+      throw new Error("operations: invalid options " + JSON.stringify(options + 
+                          ", expected an object"))
+
+    if (!options.match) {
+      options.match = {
+        operations: {
+          create: true,
+          give: true,
+          burn: true
+        }
+      }
+    } else if (options.match) {
+      if (typeof options.match !== "object")
+        throw new Error("operations: Invalid options.match " +
+                            JSON.stringify(options.match) +
+                            ", expected an object")
+
+      if (options.match.author) {
+        if (Array.prototype.isPrototypeOf(options.match.author)) {
+          var authors = options.match.author
+          for (var i = 0; i < authors.length; ++i) {
+            if (!ref.isFeed(authors[i]))
+              throw new Error("operations: Invalid options.match.author[" + i + "] " + 
+                                  JSON.stringify(authors[i]) +
+                                  ", expected valid SSB Log ID")
+          }
+        } else if (ref.isFeed(options.match.author)) {
+          options.match.author = [ options.match.author ]
+        } else {
+          throw new Error("operations: Invalid options.match.author " + 
+                              JSON.stringify(options.match.author) +
+                              ", expected valid SSB Log ID or Array of SSB Log IDs")
+        }
+      }
+
+      if (options.match.receiver) {
+        if (Array.prototype.isPrototypeOf(options.match.receiver)) {
+          var receivers = options.match.receiver
+          for (var i = 0; i < receivers.length; ++i) {
+            if (!ref.isFeed(receivers[i]))
+              throw new Error("operations: Invalid options.match.receiver[" + i + "] " + 
+                                  JSON.stringify(receivers[i]) +
+                                  ", expected valid SSB Log ID")
+          }
+        } else if (ref.isFeed(options.match.receiver)) {
+          options.match.receiver = [ options.match.receiver ]
+        } else {
+          throw new Error("operations: Invalid options.match.receiver " + 
+                              JSON.stringify(options.match.receiver) +
+                              ", expected valid SSB Log ID or Array of SSB Log IDs")
+        }
+      }
+
+      if (options.match.participant) {
+        if (options.match.author || options.match.receiver)
+          throw new Error("operations: Invalid use of options.match.participant"+
+                              " at the same time as options.match.author or " +
+                              " options.match.receiver, only one or the others " +
+                              " should be used.")
+
+        if (Array.prototype.isPrototypeOf(options.match.participant)) {
+          var participants = options.match.participant
+          for (var i = 0; i < participants.length; ++i) {
+            if (!ref.isFeed(participants[i]))
+              throw new Error("operations: Invalid options.match.participant[" + i + "] " + 
+                                  JSON.stringify(participants[i]) +
+                                  ", expected valid SSB Log ID")
+          }
+        } else if (ref.isFeed(options.match.participant)) {
+          options.match.participant = [ options.match.participant ]
+        } else {
+          throw new Error("operations: Invalid options.match.participant " + 
+                              JSON.stringify(options.match.participant) +
+                              ", expected valid SSB Log ID or Array of SSB Log IDs")
+        }
+      }
+
+      if (options.match.operations) {
+        if (typeof options.match.operations !== "object")
+          throw new Error("operations: Invalid options.match.operations " +  
+                              JSON.stringify(options.match.operations) +
+                              ", expected an object")
+
+        if (options.match.operations.hasOwnProperty('create') &&
+            !!options.match.operations.create !== options.match.operations.create)
+          throw new Error("operations: Invalid options.match.operations.create " +
+                              JSON.stringify(options.match.operations.create) +
+                              ", expected a boolean")
+
+        if (options.match.operations.hasOwnProperty('give') &&
+            !!options.match.operations.give !== options.match.operations.give)
+          throw new Error("operations: Invalid options.match.operations.give " +
+                              JSON.stringify(options.match.operations.give) +
+                              ", expected a boolean")
+
+        if (options.match.operations.hasOwnProperty('burn') &&
+            !!options.match.operations.burn !== options.match.operations.burn)
+          throw new Error("operations: Invalid options.match.operations.burn " +
+                              JSON.stringify(options.match.operations.burn) +
+                              ", expected a boolean")
+
+        options.match.operations = { 
+          create: !!options.match.operations.create,
+          give: !!options.match.operations.give,
+          burn: !!options.match.operations.burn
+        }
+      } else {
+        options.match.operations = {
+          create: true,
+          give: true,
+          burn: true
+        }
+      }
+
+
+      if (options.match.tokenType && 
+          typeof options.match.tokenType !== "string")
+        throw new Error("operations: Invalid options.match.tokenType " +
+                             JSON.stringify(options.match.tokenType) +
+                            ", expected a string")
+    } 
+
+    options.valid = options.hasOwnProperty('valid') ? options.valid : true
+    options.invalid = options.hasOwnProperty('invalid') ? options.invalid : false
+
+    if (typeof options.valid !== "boolean")
+      throw new Error("operations: Invalid options.valid " + 
+                          JSON.stringify(options.valid) +
+                          ", expected a boolean")
+
+    if (typeof options.invalid !== "boolean")
+      throw new Error("operations: Invalid options.invalid " + 
+                          JSON.stringify(options.invalid) +
+                          ", expected a boolean")
+
+    if (!options.valid && !options.invalid)
+      throw new Error("operations: options.valid and options.invalid are false, " + 
+                      "no messages to return")
+
+    options.old = options.hasOwnProperty('old') ? options.old : true
+    options.live = options.hasOwnProperty('live') ? options.live : false
+
+    if (typeof options.old !== "boolean")
+      throw new Error("operations: Invalid options.old " + 
+                          JSON.stringify(options.old) +
+                          ", expected a boolean")
+
+    if (typeof options.live !== "boolean")
+      throw new Error("operations: Invalid options.live " +
+                          JSON.stringify(options.live) +
+                          ", expected a boolean")
+
+    options.sync = options.hasOwnProperty('sync') ? options.sync : false
+
+    if (options.sync && ! options.live)
+      throw new Error("operations: If options.sync is true, options.live " +
+                      " should be true as well.")
+
+    var types = []
+    if (options.match.operations.create)
+      types.push(util.createType)
+    if (options.match.operations.give)
+      types.push(util.giveType)
+    if (options.match.operations.burn)
+      types.push(util.burnType)
+
+    var f1 = { value: { content: { type: { $in: types } } } }
+    var f2 = null
+
+    if (options.match.participant) {
+      // Add participants to matching authors
+      options.match.author = (options.match.author || [])
+                             .concat(options.match.participant)
+
+      if (options.match.operations.give) {
+        // Separately test for receivers (a participant is either
+        // an author OR a receiver)
+        var f2 = { value: { content: { type: util.giveType } } }
+
+        f2.value.content.receiver = { $in: options.match.participant }
+      }     
+    }
+
+    if (options.match.author)
+      f1.value.author = { $in: options.match.author }
+
+    if (options.match.receiver)
+      f1.value.content.receiver = { $in: options.match.receiver }
+
+    // Add participant filtering to remove duplicates matches
+    var authors = {}
+    if (options.match.author)
+      options.match.author
+        .forEach((author) => authors[author] = true)
+    var participants = {}
+    if (options.match.participant)
+      options.match.participant
+        .forEach((participant) => participants[participant] = true)
+
+    if (options.match.tokenType) {
+      f1.value.content.tokenType = { $in: options.match.tokenType }
+
+      if (f2) f2.value.content.tokenType = { $in: options.match.tokenType } 
+    }
+
+
+    // Optimizations for faster matching
+    function matchOne (prop) {
+      if(prop["$in"].length === 1)
+        return prop["$in"][0]
+      else
+        return prop
+    }
+
+    if (f1.value.author)
+      f1.value.author = matchOne(f1.value.author)
+    if (f2 && f2.value.content.receiver) 
+      f2.value.content.receiver = matchOne(f2.value.content.receiver)
+    if (f1.value.content.tokenType)
+      f1.value.content.tokenType = matchOne(f1.value.content.tokenType)
+    if (f2 && f2.value.content.tokenType) 
+      f2.value.content.tokentType = matchOne(f2.value.content.tokenType)
+
+    var q1 = { 
+      query: [
+        { $filter: f1 }
+      ], 
+      live: options.live, 
+      old: options.old,
+      sync: options.sync
+    }
+    var q2 = f2 && { 
+      query: [
+        { $filter: f2 }
+      ], 
+      live: options.live, 
+      old: options.old,
+      sync: options.sync
+    }
+
+    if (options.debug) {
+      ssb.query.explain(q1, function (err, s) { 
+        if (err) {
+          console.error("ssb.query.explain error: ")
+          console.error(err)
+        } else {
+          console.error("Author/Receiver Main Query:")
+          console.error(s)
+        }
+      })
+      ssb.query.explain(q2, function (err, s) { 
+        if (err) {
+          console.error("ssb.query.explain error: ")
+          console.error(err)
+        } else {
+          console.error("Participant Secondary Query:")
+          console.error(s)
+        }
+      })
+    }
+
+    var source = null
+    if (!q2)
+      source = ssb.query.read(q1)
+    else {
+      source = many([
+        ssb.query.read(q1),
+        pull(
+          ssb.query.read(q2),
+          pull.filter((msg) => !(authors[msg.value.author] && 
+                                 participants[msg.value.content.receiver]))
+        )
+      ])
+    }
+
+    if (options.sync) {
+      var syncRemaining = q2 ? 2 : 1
+      source = pull(
+        source,
+        pull.filter((msg) => !msg.sync || (msg.sync && syncRemaining-- === 1))
+      )
+    }
+
+    // Add validation check
+    var source = pull(
+      source,
+      pull.asyncMap(function (msg, cb) {
+        if (msg.sync)
+          return cb(null, msg)
+        else
+          return api.valid(msg, function (err, msg) {
+            if (err) msg.invalid = err
+            else msg.valid = true
+            return cb(null, msg)
+          })
+      }),
+      pull.filter(function (msg) {
+        if (msg.sync) return true
+        else if (options.valid && msg.valid) return true
+        else if (options.invalid && msg.invalid) return true
+        else return false
+      })
+    )
+
+    return source
+  }
+}
+
+function identities (ssb, api) {
+
+  function usedId (opts) {
+    var tokenType = opts.tokenType
+
+    var f1 = {
+      value: {
+        content: {
+          type: { $in: [ util.createType, util.giveType, util.burnType ] }
+        } } }
+
+    var f2 = {
+      value: {
+        content: {
+          type: util.giveType
+    } } }
+
+    if (tokenType) {
+      f1.value.content.tokenType = tokenType
+      f2.value.content.tokenType = tokenType
+    }
+
+    var q1 = { query: [{ "$filter": f1 }], limit: 1 }
+    var q2 = { query: [{ "$filter": f2 }], limit: 1 }
+
+
+    return pull(
+      pull.asyncMap(function (id, cb) {
+        f1.value.author = id
+        f2.value.content.receiver = id
+
+        pull(
+          source =  many([
+            ssb.query.read(q1),
+            ssb.query.read(q2),
+          ]),
+          pull.take(1),
+          pull.collect(function (err, ary) {
+            if (err) return cb(err)
+            else if (ary.length === 0)
+              return cb(null, null)
+            else
+              return cb(null, id)
+          })
+        )
+      }),
+      pull.filter((id) => id !== null)
+    )
+  }
+
+  function used (opts) {
+    var tokenType = opts.tokenType
+
+    var f1 = {
+      value: {
+        content: {
+          type: { $in: [ util.createType, util.giveType, util.burnType ] }
+        } } }
+
+    var f2 = { value: { content: { type: util.giveType } } }
+
+    if (tokenType) {
+      f1.value.content.tokenType = tokenType 
+      f2.value.content.tokentype = tokenType
+    }
+
+    return pull(
+      many([
+        ssb.query.read({
+          query: [
+            // Obtain unique author ids
+            { $filter: f1 },
+            { $reduce: { 'id': ['value', 'author'] } },
+            { $map: 'id' }
+          ]
+        }),
+        ssb.query.read({
+          query: [
+            // Obtain unique receiver ids
+            { $filter: f2 },
+            { $reduce: { 'id': ['value', 'content', 'receiver' ] } },
+            { $map: 'id' }
+          ]
+        })
+      ]),
+      pull.unique()
+    )
+  }
+
+  function alias (opts, cb) {
+    var author = opts.author
+    var id = opts.id
+    var name = opts.name
+
+    if (!name || (typeof name !== "string"))
+      return cb(new Error("Invalid name " + name + 
+                          ", expected a string"))
+
+    if (!ref.isFeedId(id))
+      return cb(new Error("Invalid id " + id +
+                          ", expected a SSB Log ID"))
+
+    if (author && !ref.isFeedId(author))
+      return cb(new Error("Invalid author " + author +
+                          ", expected a SSB Log ID"))
+
+    if (opts.author) 
+      ssb.identities.publishAs({
+        id: author,
+        content: {
+          type: 'about',
+          about: id,
+          name: name
+        },
+        private: false
+      }, cb)
+    else 
+      ssb.publish({
+        type: 'about',
+        about: id,
+        name: name
+      }, cb)
+  }
+
+  function create (opts, cb) {
+    cb = cb || opts
+
+    if (typeof opts === "undefined")
+      opts = {}
+
+    if (opts.alias && typeof opts.alias !== "string")
+      return cb(new Error("Invalid alias " + args.alias + 
+                          ", expected a string"))
+
+    if (!ssb.identities) {
+      return cb(new Error("Install ssb.identities " +
+                          "(https://github.com/ssbc/ssb-identities) " +
+                          "in ssb-server to create an identity."))
+    }
+      
+
+    ssb.identities.create(function (err, id) {
+      if (err) return cb(err)
+
+      if (opts.alias) {
+        alias({ 
+          name: opts.alias,
+          author: id,
+          id: id
+        }, function (err, msg) {
+          if (err) return cb(err)
+          return cb(null, { 
+            author: msg.value.author, 
+            id: msg.value.content.about, 
+            name: msg.value.content.name})
+        })
+      } else {
+        return cb(null, { id: id })
+      }
+    })
+  }
+
+  function list (opts, cb) {
+    cb = cb || opts
+
+    if (typeof cb === "object")
+      cb = null
+
+    if (typeof opts === "function" ||
+        !opts)
+      opts = {}
+
+    if (opts.tokenType) 
+      opts.used=true
+
+    var source = null
+    if (opts.used) {
+      if (!opts.own) {
+        source = used(opts)
+      } else {
+        source = defer.source()
+
+        ssb.identities.list(function (err, ids) {
+          if (err) source.resolve(pull.error(err))
+          else source.resolve(pull.values(ids))
+        })
+
+        source = pull(
+          source,
+          usedId({ tokenType: opts.tokenType })
+        )
+      }
+    } else {
+      source = defer.source()
+
+      ssb.identities.list(function (err, ids) {
+        if (err) source.resolve(pull.error(err))
+        else source.resolve(pull.values(ids))
+      })
+
+      // Traverse all messages to find other ids
+      if (!opts.own) {
+        source = pull(
+          many([
+            source, 
+            pull(
+              ssb.query.read({
+                query: [
+                  // Obtain unique author ids
+                  { $reduce: { id: ['value', 'author'] } },
+                  { $map: 'id' }
+                ]
+              }),
+            ),
+            ssb.links2.read({
+              query: [ 
+                // Obtain unique destination ids
+                { $filter: { dest: { $prefix: '@' } } },
+                { $reduce: { id: [ 'dest' ] } },
+                { $map: 'id' },
+              ]
+            })
+          ]),
+          pull.unique()
+        )
+      }
+    }
+
+    if (cb) {
+      pull(
+        source,
+        pull.collect(cb)
+      )
+    } else 
+      return source
+  }
+
+  function follow (followee, opts, cb) {
+    if (!ref.isFeed(followee))
+      return cb(new Error("identities.follow: Invalid log ID " + followee +
+                          ", expected an SSB Log ID")) 
+
+    if (opts.author && !ref.isFeed(opts.author))
+      return cb(new Error("identities.follow: Invalid opts.author " + opts.author +
+                          ", expected an SSB Log ID")) 
+
+    cb = cb || opts
+
+    if (typeof opts === 'function')
+      opts = {}
+
+    content = {
+      type: 'contact',
+      contact: followee,
+      following: true
+    }
+  
+    if (opts.author) 
+      ssb.identities.publishAs({
+        id: author,
+        content: content,
+        private: false
+      }, cb)
+    else 
+      ssb.publish(content, cb)
+  }
+
+  return {
+    alias: alias,
+    create: create,
+    follow: follow,
+    list: list
+
+  }
+}
+
+// Return the "tangle", i.e. directed acyclic graph of sources from operation
+// 'id' to the roots, as a dictionary { id: { src1: true, ... }, ... }
+function ancestors (ssb, api) {
+  return function ancestors (sources, opts, cb) {
+    var tangle = { }
+    var queue = [ ]
+    var notfound = [ ]
+    var count = 0
+
+    cb = cb || opts
+    if (typeof cb !== "function")
+      throw new Error("Invalid callback " + cb +
+                      ", expected a function with signature " +
+                      "cb(err, tangle)")
+
+    if (api._debugFlag)
+      cb = wrap(cb, 2, [sources])
+
+    if (typeof opts === "function")
+      opts = {}
+
+    opts.noRecurse = opts.noRecurse || true
+
+    sources.forEach(function (s) {
+      var id = s.id || s
+      tangle[id] = {}
+      queue.push(id)
+    })
+
+    function next () {
+      if (queue.length === 0) {
+        if (count !== Object.keys(tangle).length)
+          throw new Error("Implementation error")
+
+        if (notfound.length > 0) {
+          var err = new Error("Sources not found: " + 
+                               JSON.stringify(notfound))
+          err.notFound = true
+          err.sources = notfound
+          err.tangle = tangle
+          return cb(err)
+        } else {
+          return cb(null, tangle)
+        }
+      }
+
+      var id = queue.pop()
+      ssb.get({ id: id, meta: true }, function (err, msg) {
+        count += 1
+
+        if (err) { 
+          if (err.notFound) {
+            notfound.push(id)
+            tangle[id] = false
+            return next()
+          } else {
+            var err_ =  new Error("Error retrieving message " + id +
+                                  ": \n" + err.message)
+            err_.err = err
+            return cb(err_)
+          }
+        }
+
+        var op = msg.value.content
+        if (!util.isOp(op)) {
+          var err = new Error("Invalid operation " + JSON.stringify(op))
+          err.invalid = true
+          return cb(err)
+        }
+
+        if (!opts.noRecurse && op.sources) {
+          op.sources.forEach(function (s) {
+            var sId = s.id || s
+            if (!tangle[sId]) {
+              tangle[sId] = {}
+              queue.push(sId)
+            }
+            
+            tangle[id][sId] = true
+          })
+        }
+
+        next()
+      })
+    }
+
+    next()
+  }
+}
 
 // All functions that implement the [API](../doc/api.md) are of the form:
 //
@@ -478,858 +1714,584 @@ function ancestors (ssb, ids) {
 
 
 function create (ssb, api)  {
-  return function create (amount, currency, options, cb) {
-    function done (err, ssbMsg) {
-      if (err) return cb(err)
-      var msg = ssbMsg.value.content
-      msg.id = ssbMsg.key
-      msg.owner = ssbMsg.value.author 
-      cb(null, msg)
-    }
-
-    cb = cb || options
+  return function create (amount, options, cb) {
     if (typeof cb !== 'function') {
-      throw new Error("tokens.create: Invalid callback of type '" + (typeof cb) + "'")
+      throw new Error("tokens.create: Invalid callback of type '" + 
+                       (typeof cb) + "', " +
+                      " expected function with signature " +
+                      "cb(err,msg)")
     }
-    if (typeof amount !== 'number') {
-      return cb(new Error("tokens.create: Invalid amount of tokens '" + amount + "'"))
-    }
-    if (typeof currency !== 'string') {
-      return cb(new Error("tokens.create: Invalid currency string '" + currency + "'"))
-    }
-    if (currency.length > 30) {
-      return cb(new Error("tokens.create: Currency should be at most 30 characters long"))
+    if (api._debugFlag)
+      cb = wrap(cb, 2, [amount,options])
+
+    if (typeof options === 'string') {
+      options = { name: options }
     }
 
-    if (typeof options === 'function') {
-      options = {}
+    if (typeof options !== 'object') {
+      return cb(new Error("create: Invalid options '" + 
+                       (typeof options) + "'"))
     }
 
-    if (typeof options !== 'object' ) {
-      return cb(new Error("tokens.create: Invalid options, expected an {} instead of '" + options + "'."))
-    }
-
-    // Options and defaults
-    options.owner = options.owner || null
-    if (options.owner) {
-      if (!ref.isFeed(options.owner)) {
-        return cb(new Error("tokens.give: Invalid options.owner, expected SSB Log ID instead of '" + options.owner + "'."))
+    if (options.author) {
+      if (!ref.isFeed(options.author)) {
+        return cb(new Error("create: Invalid options.author, " +
+                            "expected SSB Log ID instead of '" + 
+                             options.author + "'."))
       }
+
       if (!ssb.identities) {
-        return cb(new Error('Install ssb.identities (https://github.com/ssbc/ssb-identities) in ssb-server to specify another owner.'))
+        return cb(new Error("Install ssb.identities " +
+                            "(https://github.com/ssbc/ssb-identities) " +
+                            "in ssb-server to specify another author."))
       }
     }
+    
+    // Get author log id
+    ssb.whoami(function (err, log) {
+      if (err) return cb(err)
 
-    options.description = options.description || null
-    if (options.description && !ref.isMsgId(options.description)) {
-      return cb(new Error("tokens.create: Invalid description, expected SSB Message ID instead of '" + options.description + "'.")) 
-    }
+      var author = options.author || log.id 
 
-    options['smallest-unit'] = options['smallest-unit'] || 1
-    var result = amount/options['smallest-unit']
-    if (result !== Math.round(result)) {
-      return cb(new Error("tokens.create: Invalid amount and smallest-unit combination, amount '" + amount + "' should be a multiple of '" + options['smallest-unit']) + "'")
-    }
+      // Create op
+      var createOp = {
+        type: util.createType,
+        amount: amount,
+        name: options.name,
+        unit: options.unit || '',
+        decimals: options.decimals || 0,
+        description: options.description || null
+      }
+      createOp.tokenType = api.tokenType(author, createOp)
 
-    var tokenHash = String(crypto.createHash('sha256')
-        .update(currency)
-        .update(String(options.description))
-        .update(String(options['smallest-unit']))
-        .digest('hex').slice(0,16))
+      var msgValue = {
+        author: author,
+        content: createOp
+      }
 
-    var msg = {
-      type: createType,
-      amount: amount,
-      currency: currency,
-      description: options.description,
-      'smallest-unit': options['smallest-unit'],
-      'token-hash': tokenHash 
-    }
+      api.validate.requirements.create(msgValue, function (err) {
+        if (err) return cb(err)  
 
-    if (!options.owner) {
-      ssb.publish(msg, done)
-    } else {
-      ssb.identities.publishAs({ 
-        id: options.owner,
-        content: msg,
-        private: false
-      }, done)
-    }
+        function done (err, msg) {
+          if (err) return cb(err)
+          cb(null, msg)
+        }
+
+        if (!(options.author) && author == log.id) {
+          ssb.publish(createOp, done)
+        } else {
+          ssb.identities.publishAs({ 
+            id: author,
+            content: createOp,
+            private: false
+          }, done)
+        }
+      })
+    })
   }
+}
+
+function checkSource(s) {
+  if (typeof s === 'object') {
+    if (typeof s.amount !== 'undefined' && 
+        typeof s.amount !== 'number' &&
+        typeof s.amount !== 'null') 
+      return new Error("Invalid source amount " + s.amount + " for source " + 
+                        JSON.stringify(s) + 
+                        ", expected number instead of " + typeof s.amount)
+
+    if (s.id && !ref.isMsgId(s.id))
+      return new Error("Invalid source id " + s.id + " for source " +
+                        JSON.stringify(s) +
+                        ", expected SSB_MESSAGE_ID ")
+
+    if (s.tokenType && typeof s.tokenType !== "string")
+      return new Error("Invalid source token type " + s.tokenType + 
+                       " for source " + JSON.stringify(s) +
+                        ", expected string")
+
+    if (!s.id && !s.tokenType) 
+      return new Error("Invalid source " + JSON.stringify(s) +
+                        ", expected either 'id' or 'tokenType'")
+
+    return null
+  } else return new Error("Invalid source " + JSON.stringify(s) +
+                          ", expected object instead of " + typeof s)
 }
 
 function give (ssb,api)  {
-
-  // See [ssb.tokens.give](./doc/api.md) pre-conditions
-  //
-  // 1. All sources have the same properties (token-hash) 
-  // 2. Each source amount is a multiple of smallest-unit
-  // 3. Owner really owns the token
-  // 4. Unspent tokens are greater than numbers given from each source
-  // 5. Replaces 'null' with the unspent number of tokens
-  function validate (owner, source, recipient, cb) {
-    var tokenHash = null
-    var smallestUnit = null
-    whoami().then((log) => { owner = owner || log.id })
-    .then(() => consistentTokenHashesP(source)) // Prop 1
-    .then((_tokenHash) => tokenPropertiesP(tokenHash = _tokenHash))
-    .then((props) => sourceIsMultipleP(props["smallest-unit"], source)) // Prop 2
-    .then(() => list({ owner: owner, "token-hash": tokenHash })) // Prop 3
-    //.then((tokens) => { console.log(tokenHash); console.log(owner); console.log(tokens); return tokens })
-    .then((tokens) => { 
-      if (tokens.length > 0) return sourceEnoughUnspentP(tokens[0], source) 
-      else throw new Error("No token found for owner " + owner + 
-                            " with source " + JSON.stringify(source))
-    })
-    .then((source) => {
-      cb(null, {
-        type: giveType,
-        "token-hash": tokenHash,
-        source: source,
-        amount: source.map((s) => s.amount).reduce(sum, 0),
-        recipient: recipient
-      })
-    })
-    .catch(cb)
-  }
-
-  var whoami = util.promisify(ssb.whoami)
-  var get = util.promisify(ssb.get)
-  var list = util.promisify(api.list)
-  var consistentTokenHashesP = util.promisify((source,cb) => consistentTokenHashes(ssb,source,cb))
-  var tokenPropertiesP = util.promisify((tokenHash,cb) => tokenProperties(ssb,tokenHash,cb))
-  var sourceIsMultipleP = util.promisify(sourceIsMultiple)
-  var sourceEnoughUnspentP = util.promisify(sourceEnoughUnspent)
-
-  return function give (source, recipient, options, cb) {
-    function done (err, ssbMsg) {
-      if (err) return cb(err)
-      var msg = ssbMsg.value.content
-      msg.id = ssbMsg.key
-      msg.owner = ssbMsg.value.author 
-      cb(null, msg)
-    }
-
-    function checkObject(s) {
-      if (typeof s === 'object') {
-        if (typeof s.amount !== 'undefined' && 
-            typeof s.amount !== 'number' &&
-            typeof s.amount !== 'null') {
-          return new Error("tokens.give: Invalid source amount, expected number instead of '" + 
-                            typeof s.amount + "'.")
-        }
-
-        if (s.hasOwnProperty('id') &&
-            (typeof s.id !== 'string' ||
-            !ref.isMsgId(s.id))) {
-          return new Error("tokens.give: Invalid source id, expected SSB_MESSAGE_ID " +
-                           "instead of " + JSON.stringify(s.id) + ".")
-        } 
-
-        if (s.hasOwnProperty('token-hash') &&
-            (typeof s['token-hash'] !== 'string')) {
-          return new Error("tokens.give: Invalid source 'token-hash' expected string " +
-                            "instead of " + JSON.stringify(s['token-hash']) + ".")
-        }
-
-        if (!s.hasOwnProperty('id') &&
-            !s.hasOwnProperty('token-hash')) {
-          return new Error("tokens.give: Invalid source, expected either property 'id' or 'token-hash'.")
-        }
-        return null
-      } else return new Error("tokens.give: Invalid source, expected object instead of " + 
-                               typeof source + ".")
-    }
+  return function give (sources, receiver, options, cb) {
 
     // Type and Syntactic Validation
     cb = cb || options
-    if (typeof cb !== 'function') {
-      throw new Error("tokens.give: Invalid callback of type '" + (typeof cb) + "'.")
-    }
-    if (typeof source === 'string') {
-      if (!ref.isMsgId(source)) {
-        return cb(new Error("tokens.give: Invalid tokens reference, " + 
-                            "expected SSB Message ID instead of '" + source + "'."))   
+    if (typeof cb !== 'function') 
+      throw new Error("Invalid callback of type '" + (typeof cb) +
+                      ", expected a function with signature cb(err, msg)")
+
+    if (api._debugFlag)
+      cb = wrap(cb, 2, [sources, receiver, options])
+    
+    if (typeof sources === 'string') {
+      if (!ref.isMsgId(sources)) {
+        return cb(new Error("Invalid source " + JSON.stringify(sources) +
+                        ", expected SSB Message ID"))
       }
-      source = [ { amount: null, id: source } ] // 'null' will be replaced the amount remaining during validation
-    } else if (Array.prototype.isPrototypeOf(source) && source.length > 0) {
-      for (var i = 0; i < source.length; ++i) {
-        var s = source[i]
-        var err = checkObject(s)
+      // 'null' will be replaced by unspent from source
+      sources = [ { amount: null, id: sources } ]     
+    } else if (Array.prototype.isPrototypeOf(sources) && sources.length > 0) {
+      for (var i = 0; i < sources.length; ++i) {
+        var s = sources[i]
+        var err = checkSource(s)
         if (err !== null) return cb(err)
       }
     } else {
-      var err = checkObject(source)
+      var err = checkSource(sources)
       if (err !== null) return cb(err)
-      source = [ source ]
+      sources = [ sources ]
     }
 
-    if (typeof recipient !== 'string' && !ref.isFeed(recipient)) {
-      return cb(new Error("tokens.give: Invalid recipient, expected a SSB Log ID "
-                          + " instead of '" + JSON.stringify(recipient) + "'."))
-    }
+    if (!ref.isFeed(receiver))
+      return cb(new Error("Invalid receiver " + JSON.stringify(receiver) + 
+                      ", expected a SSB Log ID"))
 
-    if (typeof options === 'function') {
+    if (typeof options === 'function') 
       options = {}
-    }
     
-    if (typeof options !== 'object' ) {
-      return cb(new Error("tokens.give: Invalid options, expected an {} instead of '" + 
-                           JSON.stringify(options) + "'."))
+    if (typeof options !== 'object' )
+      return cb(new Error("Invalid options " + JSON.stringify(options) +
+                      ", expected an object"))
+
+    options.author = options.author || null
+    if (options.author) {
+      if (!ref.isFeed(options.author))
+        return cb(new Error("Invalid options.author " +
+                        JSON.stringify(options.author) +
+                        ", expected SSB Log ID"))
+
+      if (!ssb.identities)
+        return cb(new Error("Install ssb.identities " +
+                        "(https://github.com/ssbc/ssb-identities) " +
+                        " in ssb-server to specify another author."))
     }
 
-    options.owner = options.owner || null
-    if (options.owner) {
-      if (!ref.isFeed(options.owner)) {
-        return cb(new Error("tokens.give: Invalid options.owner, expected SSB Log ID instead of '" + 
-                             options.owner + "'."))
-      }
-      if (!ssb.identities) {
-        return cb(new Error('Install ssb.identities (https://github.com/ssbc/ssb-identities) in ssb-server to specify another owner.'))
-      }
-    }
+    ssb.whoami(function (err, author) {
+      if (err) return cb(new Error("Error retrieving default author: \n" + 
+                                   err.message))
 
-    validate(options.owner, source, recipient, function publish (err, msg) {
-      if (err) return cb(err)
+      author = options.author || author.id
 
-      if (!options.owner) {
-        ssb.publish(msg, done)
-      } else {
-        ssb.identities.publishAs({ 
-          id: options.owner,
-          content: msg,
-          private: false
-        }, done)
-      }
-    })
-  }
-}
+      pull(
+        pull.values(sources),
+        pull.asyncMap(function (s, cb) {
+          if (ref.isMsgId(s)) {
+            api.unspent(s, author, function (err, unspent, msg) {
+              if (err) return cb(new Error("Error retrieving unspent tokens " +
+                                           "for source " + s + 
+                                           " with owner " + author + ": \n" + 
+                                           err.message))
 
-function trace (ssb) { 
-  function validate (opId, cb) {
-    // Traces
-
-    // 1. Check that owner really owns the tokens
-    // Create: Operation in owner's log
-    // Give: Operation lists owner as recipient
-    operations.forEach(function (pair) {
-      var number = pair[0]
-      var opId = pair[1]
-
-    })
-
-    
-    // 2. Ensure unspent number is sufficient, 
-    //    i.e. greater or equal to the number to spend
-
-
-    // 3. Roots have the same 'currency', 'description', and 'smallest-unit'
-
-    // 4. Validate all ancestor operations
-    //
-  }
-
-  return function trace (tokens, options, cb) {
-
-  }
-}
-
-function list (ssb,api) {
-
-  // TODO: Add validation of messages
-
-  function toOp (opCache, id, msg) {
-    if (!opCache.hasOwnProperty(id)) {
-      var content = msg.content
-      var op = {}
-      opCache[id] = op
-      for (p in content) {
-        op[p] = content[p]  
-      }
-      op["id"] = id
-      op["author"] = msg.author
-      if (isCreate(content) || isGive(content)) {
-        op["unspent"] = op["amount"]
-      } else {
-        op["unspent"] = 0
-      }
-    }
-    return opCache[id]
-  }
-
-  function tokenHash(owner, op) {
-    return owner + op['token-hash']
-  }
-
-  function updateSource(opCache, op) {
-    op.source.forEach( (s) => {
-      var opId = ref.isMsgId(s) ? s : s.id
-      if (opCache[opId]) {
-        var op = opCache[opId]
-        op["unspent"] -= s.amount || op.amount // give or burn source
-      }
-    })
-  }
-
-  function updateUnspent(opCache, token) {
-    token.given.forEach((op) => updateSource(opCache, op)) 
-    token.burnt.forEach((op) => updateSource(opCache, op)) 
-  }
-
-  function toToken(tokenCache, opCache, owner, op, options) {
-    var token = null
-    var hash = tokenHash(owner,op)
-    if (!tokenCache.hasOwnProperty(hash)) {
-      token = {
-        owner: owner,
-        currency: undefined,
-        description: undefined,
-        "smallest-unit": undefined,
-        "token-hash": op["token-hash"],
-        balance: 0,
-        created: {},
-        received: {},
-        given: {},
-        burnt: {},
-        all: {}
-      }
-      tokenCache[hash] = token
-    }
-    token = tokenCache[hash]
-
-    if (options.stateless) 
-      return token
-
-    if (isCreate(op) && !token.created[op.id]) {
-      token.balance += op["amount"] 
-      token.created[op.id] = op
-    } else if (isGive(op)) {
-      if (op.recipient === owner &&
-          !token.received[op.id]) {
-        token.balance += op["amount"]
-        token.received[op.id] = op
-      } else if (op.author === owner &&
-                 !token.given[op.id]) {
-        token.balance -= op["amount"]  
-        token.given[op.id] = op
-      }
-    } else if (isBurn(op) &&
-               !token.burnt[op.id]) {
-      token.balance -= op["amount"]
-      token.burnt[op.id]  = op
-    }
-    token.all[op.id] = op
-  
-    return token
-  }
-
-  function collect(filter, options, cb) {
-    var tokens = {}
-    var ops = {}
-    var done = {
-      "created": null,
-      "received": null,
-      "given": !filter.owner || null, // Skip if filter.owner not specified
-      "burnt": null
-    }
-    var errs = []
-
-    var allDone = () => {
-      return done["created"] && 
-      done["received"] && 
-      done["given"] && 
-      done["burnt"]
-    }
-    var errors = () => {
-      if (errs.length > 0) {
-        var e = new Error("Errors in tokens.list, check err.errs")
-        e.errs = errs
-        return e
-      } else return null
-    }
-
-    // Find all possible tokens matching criterias (including from other owners)
-    var tokenHashes = {}
-    var tokenHashQ = { type: createType } 
-    if (filter.currency)         tokenHashQ.currency = filter.currency
-    if (filter.description)      tokenHashQ.description = filter.description
-    if (filter["smallest-unit"]) tokenHashQ["smallest-unit"] = filter["smallest-unit"]
-    if (filter["token-hash"])    tokenHashQ["token-hash"] = filter["token-hash"]
-
-    pull( ssb.query.read({ query: [{ "$filter": { value: { content: tokenHashQ } } }] }),
-      pull.drain(
-        (res) => { 
-          var hash = res.value.content["token-hash"]
-          tokenHashes[hash] = toOp(ops, res.key, res.value)
-        },
-        (err) => {
-          if (err) return cb(errors())
-
-          queries = [
-            { done: "created",  value: { content: { type: createType } } },
-            { done: "received", value: { content: { type: giveType } } },
-            { done: "given",    value: { content: { type: giveType } } },
-            { done: "burnt",    value: { content: { type: burnType } } },
-          ]
-
-          if (filter.owner) {
-            var owner = filter.owner
-            queries[0].value.author = owner
-            queries[1].value.content.recipient = owner
-            queries[2].value.author = owner
-            queries[3].value.author = owner
-          } else {
-            // If the owner is unspecified, only query give
-            // operations once
-            queries = [ queries[0], queries[1], queries[3]]
-          }
-
-          queries.forEach( (q) => {
-            pull( ssb.query.read({ query: [{ "$filter": { value: q.value } }] }),
-              pull.drain(
-                (res) => { 
-                  log("found msg for query " + q.done +  ": ")
-                  log(res)
-                  var id = res.key
-                  var msg = res.value
-
-                  var props = null
-                  if (props = tokenHashes[msg.content["token-hash"]]) {
-                    var op = toOp(ops, id, msg)
-
-                    var owned = null
-                    var received = null
-                    if (filter.owner) {
-                      if (filter.owner === msg.author)
-                        owned = toToken(tokens, ops, msg.author, op, options) 
-                      if (isGive(op) && filter.owner === op.recipient)
-                        received = toToken(tokens, ops, op.recipient, op, options) 
-                    } else {
-                      // Add give operation both to giver and givee tokens
-                      owned = toToken(tokens, ops, msg.author, op, options) 
-                      if (isGive(op))
-                        received = toToken(tokens, ops, op.recipient, op, options) 
-                    }
-                    
-                    // Add missing properties
-                    if (owned) {
-                      owned.currency = props.currency
-                      owned.description = props.description
-                      owned["smallest-unit"] = props["smallest-unit"]
-                    } 
-
-                    if (received) {
-                      received.currency = props.currency
-                      received.description = props.description
-                      received["smallest-unit"] = props["smallest-unit"]
-                    }
-                  }
-                },
-                (err) => {
-                  done[q.done] = true
-                  if (err) errs.push(err)
-                  if (allDone()) {
-                    var tokenList = Object.values(tokens)
-                    if (options.stateless) {
-                      // Ignore tokens from different owners with the
-                      // same "token-hash"
-                      var tokenHashes = {}
-                      tokenList.forEach((token) => {
-                        if (!tokenHashes[token["token-hash"]]) {
-                          tokenHashes[token["token-hash"]] = {
-                            currency: token.currency,
-                            description: token.description,
-                            "smallest-unit": token["smallest-unit"],
-                            "token-hash": token["token-hash"]
-                          }
-                        }
-                      })
-                      tokenList = Object.values(tokenHashes)
-                    } else {
-                      // Check invariants and adjust format
-                      for (var i = 0; i < tokenList.length; ++i) {
-                        var token = tokenList[i]
-
-                        var _created = token.created
-                        var _received = token.received
-
-                        token.created = Object.values(token.created)
-                        token.received = Object.values(token.received)
-                        token.given = Object.values(token.given)
-                        token.burnt = Object.values(token.burnt)
-                        updateUnspent(ops, token)
-
-                        var unspent = token.created.concat(token.received)
-                                      .map( (op) => op.unspent ).reduce(sum, 0)
-                        if (unspent !== token.balance) {
-                          return cb(new Error("Sum of unspent tokens is " + unspent + 
-                                              " but should be equal to " + token.balance))
-                        }
-                        var balance = token.created.concat(token.received)
-                                      .map( (op) => op.amount ).reduce(sum, 0) +
-                                      token.given.concat(token.burnt)
-                                      .map( (op) => -op.amount).reduce(sum, 0)
-
-                        if (balance !== token.balance) {
-                          return cb(new Error("Sum of amounts is " + balance +
-                                              " but should be equal to " + token.balance))
-                        }
-                        var sourced = token.given.reduce(
-                                        (acc, op) => op.source.reduce( 
-                                            (acc, s) => acc && ((s.id in _created) || (s.id in _received)),
-                                            acc),
-                                        true) &&
-                                      token.burnt.reduce(
-                                        (acc, op) => op.source.reduce(
-                                            (acc, s) => acc && ((s in _created) || (s in _received)),
-                                            acc),
-                                        true)
-                        if (!sourced) {
-                          return cb(new Error("Some operations in token.given and token.burnt " +
-                                              "are not in token.created and token.received."))
-                        }
-                      }
-                    }
-                    cb(errors(), tokenList)
-                  }
+              var op = msg.value.content
+              return cb(null, { 
+                amount: unspent, 
+                id: s , 
+                tokenType: op.tokenType
               })
-            )
+            })
+          } else if (s.id) {
+            api.unspent(s.id, author, function (err, unspent, msg) {
+              if (err) return cb(new Error("Error retrieving unspent tokens " +
+                                           "for source " + s.id + 
+                                           " with owner " + author + ": \n" + 
+                                           err.message ))
+
+              var op = msg.value.content
+              return cb(null, { 
+                amount: s.amount || unspent, 
+                id: s.id,
+                tokenType: op.tokenType
+              })
+            })
+          } else if (s.tokenType) {
+            api.balance(s.tokenType, author, function (err, bal) {
+              if (err) return cb(new Error("Error retrieving balance for " + 
+                                           s.tokenType + " with owner " + 
+                                           author + ": \n" + err.message))
+
+              if (!s.amount) return cb(null, Object.values(bal.unspent))
+
+              var requested = s.amount
+              var sources = []
+              Object.values(bal.unspent).forEach(function (s_) {
+                if (requested > 0) {
+                  var amount = Math.min(requested, s_.amount)
+                  requested -= amount
+                  sources.push({ 
+                    amount: amount, 
+                    id: s_.id, 
+                    tokenType: s_.tokenType 
+                  })
+                }
+              })
+
+              if (requested > 0)
+                return cb(new Error("Insufficient unspent amounts of " + 
+                                    "token type " + s.tokenType +
+                                    " in remaining sources " + 
+                                    JSON.stringify(Object.values(bal.unspent)) +
+                                    " to fulfill the requested amount of " + 
+                                    s.amount))
+
+              return cb(null, sources)
+            })
+          } else {
+            return cb(new Error("Unsupported source " + JSON.stringify(s)))
+          }
+        }),
+        pull.collect(function (err, ary) {
+          if (err) return cb(err) 
+
+          var _sources = flatten(ary)
+
+          if (_sources.length === 0)
+            return cb(new Error("Invalid requested sources " + 
+                                JSON.stringify(sources) + 
+                                ", no operation found"))
+
+          var msgValue = {
+            author: author,
+            content: {
+              type: "tokens/" + meta['api-version'] + "/give",
+              sources: _sources.map((s) => ({ 
+                amount: s.amount, 
+                id: s.id 
+              }) ),
+              amount: _sources.map((s) => s.amount).reduce(sum,0),
+              receiver: receiver,
+              description: options.description || null,
+              tokenType: _sources[0].tokenType
+            }
+          }
+          
+          api.validate.requirements(msgValue, function (err, msgValue) {
+            if (err) return cb(new Error("Error validating message value " + 
+                                          JSON.stringify(msgValue, null, 2) + 
+                                         ": \n" + err.message))
+
+            if (!options.author) {
+              ssb.publish(msgValue.content, cb)
+            } else {
+              ssb.identities.publishAs({ 
+                id: options.author,
+                content: msgValue.content,
+                private: false
+              }, cb)
+            }
           })
-      })
-    )
-  }
-
-  return function list (filter, options, cb) {
-    cb = cb || options || filter
-    if (typeof cb !== 'function') {
-      throw new Error("tokens.list: Invalid callback of type '" + (typeof cb) + "'")
-    }
-
-    if (typeof options === 'function' || typeof options === 'undefined') {
-      options = { }
-    }
-
-    if (typeof filter !== 'function' && typeof filter !== 'object') {
-      return cb(new Error("tokens.list: Invalid filter of type '" + (typeof filter) + "'"))
-    }
-
-    if (typeof filter === 'function') {
-      filter = { }
-    } 
-
-    if (typeof options !== 'object' ) {
-      return cb(new Error("tokens.list: Invalid options, expected an {} instead of '" + options + "'."))
-    }
-
-    if (typeof options.owner !== 'undefined' && (typeof options.owner !== 'string' || !ref.isFeed(options.owner))) {
-      return cb(new Error("tokens.list: Invalid owner '" + options.owner + "', expected an SSB ID")) 
-    }
-
-    if (typeof filter.currency !== 'undefined' && typeof filter.currency !== 'string') {
-      return cb(new Error("tokens.list: Invalid currency '" + filter.currency + "'"))
-    }
-
-    if (typeof filter.description !== 'undefined' && (typeof filter.description !== 'string' || !ref.isMsgId(filter.description))) {
-      return cb(new Error("tokens.list: Invalid description '" + filter.description + "'"))
-    }
-
-    if (typeof filter["smallest-unit"] !== 'undefined' && typeof filter["smallest-unit"] !== 'number') {
-      return cb(new Error("tokens.list: Invalid smallest-unit '" + filter["smallest-unit"] + "'"))
-    }
-
-    if (typeof filter["token-hash"] !== 'undefined' && typeof filter["token-hash"] !== 'string') {
-      return cb(new Error("tokens.list: Invalid token-hash '" + filter["token-hash"] + "'"))
-    }
-
-    collect(filter, options, cb) 
+        })
+      )
+    })
   }
 }
 
 function burn (ssb,api)  {
-  var consistentTokenHashesP = util.promisify((source,cb) => consistentTokenHashes(ssb,source,cb))
-  var whoami = util.promisify(ssb.whoami)
-  var list = util.promisify(api.list)
-
-  return function (source, options, cb) {
+  return function (sources, options, cb) {
     cb = cb || options
 
-    function done (err, msg) {
-      if (err) return cb(err)
-      var op = msg.value.content
-      op.id = msg.key
-      op.author = msg.author
-      return cb(null, op)
-    }
+    // Type and Syntactic Validation
+    cb = cb || options
+    if (typeof cb !== 'function') 
+      throw new Error("Invalid callback of type '" + (typeof cb) +
+                      ", expected a function with signature cb(err, msg)")
+
+    if (api._debugFlag)
+      cb = wrap(cb, 2, [sources, options])
     
-    if (typeof source === "string" && ref.isMsgId(source)) {
-      source = [ source ]
-    } else if (Array.prototype.isPrototypeOf(source)) {
-      if (source.length < 1) {
-        return cb(new Error("Empty source, expected an array " +
-                            "of operation ids (SSB Message IDs)."))
+    if (typeof sources === 'string') {
+      if (!ref.isMsgId(sources)) {
+        return cb(new Error("Invalid source " + JSON.stringify(sources) +
+                        ", expected SSB Message ID"))
       }
-      for (var i = 0; i < source.length; ++i) {
-        if (typeof source[i] !== "string" || 
-            !ref.isMsgId(source[i])) {
-          return cb(new Error("Invalid operation id, expected an SSB Message ID, " +
-                              " of a create or give operation."))
+      // 'null' will be replaced by unspent from source
+      sources = [ { amount: null, id: sources } ]     
+    } else if (Array.prototype.isPrototypeOf(sources) && sources.length > 0) {
+      var sources = sources.slice(0) // Avoid modifying input array
+      for (var i = 0; i < sources.length; ++i) {
+        var s = sources[i]
+        if (ref.isMsgId(s)) {
+          s = { id: s }
+          sources[i] = s
         }
+        var err = checkSource(s)
+        if (err !== null) return cb(err)
       }
     } else {
-      return cb(new Error("Invalid source, expected one, or an array of, operation id " +
-                          "(SSB Message ID) of create or give operation."))
+      var err = checkSource(sources)
+      if (err !== null) return cb(err)
+      sources = [ sources ]
     }
 
-    if (typeof options === "function") {
-      options = {}   
+    if (typeof options === 'function') 
+      options = {}
+    
+    if (typeof options !== 'object' )
+      return cb(new Error("Invalid options " + JSON.stringify(options) +
+                      ", expected an object"))
+
+    options.author = options.author || null
+    if (options.author) {
+      if (!ref.isFeed(options.author))
+        return cb(new Error("Invalid options.author " + 
+                        JSON.stringify(options.author) +
+                        ", expected SSB Log ID"))
+
+      if (!ssb.identities)
+        return cb(new Error("Install ssb.identities " +
+                        "(https://github.com/ssbc/ssb-identities) " +
+                        " in ssb-server to specify another author."))
     }
 
-    var tokenHash = null
-    var amount = 0
-    var sourceIds = {}
-    function inSourceIds (op) {
-      var source = op.source
-      for (var i = 0; i < source.length; ++i) {
-        if (source[i] in sourceIds || 
-            source[i].id in sourceIds)
-          return true
-      }
-      return false
-    }
+    ssb.whoami(function (err, author) {
+      if (err) return cb(new Error("Error retrieving default author: \n" + 
+                                   err.message))
 
-    source.forEach((s) => sourceIds[s] = true)
-    whoami().then((log) => { options.owner = options.owner || log.id })
-    consistentTokenHashesP(source.map((s) => ({ amount: null, id: s }) ))
-    .then((_tokenHash) => list({ owner: options.owner, "token-hash": tokenHash=_tokenHash }))
-    .then((tokens) => {
-      if (tokens.length < 1) {
-        throw new Error("Invalid source(s) '" + JSON.stringify(source) + 
-                        "', inexistant or not owned by " + options.owner + ".")
-      }
-      amount=tokens[0].created.concat(tokens[0].received)
-            .filter((op) => sourceIds.hasOwnProperty(op.id))
-            .map((op) => op.amount)
-            .reduce(sum, 0) 
+      author = options.author || author.id
 
-      var tok = tokens[0]
-      source.forEach((s) => {
-        var nonVirgin = null 
-        if ((nonVirgin=tok.given.filter(inSourceIds)).length > 0) {
-          throw new Error("Invalid source(s) " + JSON.stringify(s) + 
-                          ", already partially or completely given.")
-        }
-        
-        if ((nonVirgin=tok.burnt.filter(inSourceIds)).length > 0) {
-          throw new Error("Invalid source(s) " + JSON.stringify(s) + 
-                          ", already burnt.")
-        }
-      })
+      pull(
+        pull.values(sources),
+        pull.asyncMap(function (s, cb) {
+          api.unspent(s.id, author, function (err, unspent, msg) {
+            if (err) return cb(new Error("Error retrieving unspent tokens " +
+                                         "for " + s.id + 
+                                          " with owner " + author + ": \n" + 
+                                         err.message))
+
+            var op = msg.value.content
+            var adjective = (unspent === 0) ? 'completely' : 'partially'
+            if (unspent !== op.amount)
+              return cb(new Error("Invalid source " + s.id +
+                                  " for burning, already " + adjective + 
+                                  " spent"))
+
+            return cb(null, { 
+              amount: unspent, 
+              id: s.id , 
+              tokenType: op.tokenType
+            })
+          })
+        }),
+        pull.collect(function (err, ary) {
+          if (err) return cb(err) 
+
+          var _sources = flatten(ary)
+
+          if (_sources.length === 0)
+            return cb(new Error("Invalid requested sources " + 
+                                JSON.stringify(sources) + 
+                                ", no operation found"))
+
+          var msgValue = {
+            author: author,
+            content: {
+              type: "tokens/" + meta['api-version'] + "/burn",
+              sources: _sources.map((s) => ({ 
+                amount: s.amount, 
+                id: s.id 
+              }) ),
+              amount: _sources.map((s) => s.amount).reduce(sum,0),
+              description: options.description || null,
+              tokenType: _sources[0].tokenType
+            }
+          }
+          
+          api.validate.requirements(msgValue, function (err, msgValue) {
+            if (err) return cb(new Error("Error validating message value " + 
+                                          JSON.stringify(msgValue, null, 2) + 
+                                         ": \n" + err.message))
+
+            if (!options.author) {
+              ssb.publish(msgValue.content, cb)
+            } else {
+              ssb.identities.publishAs({ 
+                id: options.author,
+                content: msgValue.content,
+                private: false
+              }, cb)
+            }
+          })
+        })
+      )
     })
-    .then(() => {
-      var msg = {
-        type: burnType,
-        "token-hash": tokenHash,
-        source: source,
-        amount: amount
-      }
-      log('publishing msg')
-      log(msg)
-
-      ssb.identities.publishAs({ 
-        id: options.owner,
-        content: msg,
-        private: false
-      }, done)
-    })
-    .catch(cb)
   }
 }
 
-function validate (ssb, api) {
 
+function valid (ssb, api) {
+  var invalidCache = {}
+  var validCache = {}
   
-  return function validate (source, options, cb) {
-    function checkType (source) {
-      var err = null
-      if (typeof source === "string" &&
-          !ref.isMsgId(source)) {
-        return new Error("Invalid source string, expected an SSB Message ID instead of '" + source + "'.")
-      } else if (Array.prototype.isPrototypeOf(source)) {
-        for (var i = 0; i < source.length; ++i) {
-          if (err=checkType(source[i])) return err
-        }
-        return err
-      } else if (typeof source === "object") {
-        if (!source.id) return new Error("Invalid source '" + JSON.stringify(source) + 
-                                         "', expected 'id' with operation-id.")
-        if (typeof source.id !== "string" ||
-            !ref.isMsgId(source.id))
-          return new Error("Invalid source.id '" + source.id + "', expected SSB MSG ID.")
-
-        if (source.amount && typeof source.amount !== "number") 
-          return new Error("Invalid source.amount '" + source.amount + 
-                           "', expected number.")
-      } else {
-        return null
-      }
-    }
-
-    cb = cb || options    
+  function valid (msg, options, cb) {
+    cb = cb || options
+    if (api._debugFlag)
+      cb = wrap(cb, 2, [msg, options])
 
     if (typeof options === "function") {
       options = {}
     }
 
-    var err = null
-    if (err=checkType(source)) return cb(err)
-    else if (typeof source === "string") source = [ source ]
-    else if (typeof source === "object" && !Array.prototype.isPrototypeOf(source))
-      source = [ source.id ]
-    else 
-      source = source.map(function (s) { return typeof s === "string" ? s : s.id })
+    if (!msg.key || !msg.value) 
+      return cb(Error("Invalid message object, should have a 'key'" +
+                      " and a 'value' property"), msg)
 
-    var invalid = {}
-    var amounts = {}
-    var recipient = {}
-    var proofs = {}
+    var expected = "%" + ssbKeys.hash(JSON.stringify(msg.value, null, 2))
+    if (expected !== msg.key)
+      return cb(Error("Inconsistent msg.key and msg.value," +
+                      " key was " + msg.key + " but expected " + expected), msg)
 
-    pull(
-      ancestors(ssb, source),
-      pull.drain( (op) => {
-        if (!isCorrectSchema(op)) {
-          invalid[op.id] = { op: op, error: new Error("Incorrect schema") }
-          return
-        }
+    var err = reqMsg(msg.value)
+    if (err) return cb(err, msg)
+
+    if (!util.isOp(msg.value.content))
+      return cb(new Error("Invalid msg value " + 
+                           JSON.stringify(msg.value) + 
+                          ", expected an ssb-tokens operation"), msg)
+
+    if (invalidCache[msg.key])
+      return cb(new Error("Invalid " + msg.key + ", invalidated previously."), msg)
+
+    // TODO: Handle forks once SSB supports it, for now 
+    //       invalid messages from forks are stored in the same way
+    //       Maybe ssb-ooo can retrieve forked messages?
+    
+    // TODO: Optimize memory usage with validation frontier
+    //var author = msg.value.author
+    //if (frontier[author].value.sequence >= msg.value.sequence)
+    //  return cb(null, msg)  // Msg is valid
+    
+    if (validCache[msg.key])
+      return cb(null, msg)
+
+    api.validate.requirements(msg.value, function (err) {
+      if (err) {
+        if (err.notFound) return cb(err, msg)
+
+        if (msg.key) 
+          invalidCache[msg.key] = true
+        return cb(err, msg)
+      } else {
+        validCache[msg.key] = true
+        return cb(null, msg)
+      }
+    })
+  }
+
+  return {
+    method: valid,
+    cache: {
+      validated: function (msg) { 
+        return validCache[msg.key] || invalidCache[msg.key]
+      },
+      clear: function (msg) {
+        validCache = {}
+        invalidCache = {}
+      },
+      serialize: function () {
+        return JSON.stringify({
+          validCache: validCache,
+          invalidCache: invalidCache
+        }, null, 2)
+      },
+      restore: function (str) {
+        var cache = JSON.parse(str) 
         
-        if (!amounts[op.id]) {
-          amounts[op.id] = 0
-          proofs[op.id] = []
-        }
-        
-        if (isCreate(op)) {
-          // TODO: Check consistency of token hash
+        if (!cache.validCache || !cache.invalidCache)
+          throw new Error("Invalid restoration string," +
+                          "expected 'validCache' and 'invalidCache' " +
+                          "properties")
 
-          amounts[op.id] += op.amount
-          receiver[op.id] = op.owner
-          proofs[op.id].push(op)
-
-        } else if (isGive(op)) {
-          // TODO: Check consistency of token hash
-          
-          var wrong = false
-          var total = 0
-          op.source.forEach(function (s) {
-            // TODO: Check that s.id exists
-            //
-            if (amounts[s.id] < s.amount) {
-              invalid[s.id] = { op: op, source: s.id, proof: proofs[s.id], error: new Error("Insufficient funds available") }
-              wrong = true
-            } else if (receiver[s.id] !== op.owner) {
-              invalid[s.id] = { op: op, source: s.id, proof: proofs[s.id], error: new Error("Inconsistent owner between the author of the give and the sources used") }
-              wrong = true
-            } else {
-              amounts[s.id] -= s.amount
-              total += s.amount
-              proofs[s.id].push(op)
-              wrong = wrong || false
-            }
-          })
-
-          if (total !== op.amount) {
-            wrong = true
-            invalid[op.id] = { 
-              op: op, source: op.id, total: total, 
-              error: new Error("Inconsistency between total amount of sources and operation amount") 
-            }
-          }
-
-          if (!wrong)
-            amounts[op.id] += op.amount
-        } else if (isBurn(op)) {
-          // TODO: Check consistency of token hash
-          //
-          // TODO: Check that s.id exists
-          //
-          
-          op.source.forEach(function (id) {
-            if (amounts[id] === 0) 
-              invalid[id] = { op: op, source: id, proof: proofs[id], error: new Error("Burning unavailable tokens") }
-            else 
-              amounts[id] = 0
-          })
-        }
-      }, (err) => {
-        if (err) return cb(err)
-        
-        if (Object.keys(invalid).length > 0) {
-          var err = new Error("Invalid source")
-          err.invalid = Object.values(invalid)
-          return cb(err)
-        } else 
-          return cb(null)
-      })
-    )
-
-    // Check sufficient funds available:
-    // 1. Funds from create are always available
-    // 2. Funds from a give.source are valid iff:
-    //   2.1 There exist no other give from the same author such that
-    //       the sum of amounts in all give from the same source is 
-    //       is greater than the amount available from that source.
-    //   2.2 The receiver of the source is indeed the author of the give.
+        validCache = cache.validCache
+        invalidCache = cache.invalidCache
+      }
+    }
   }
 }
 
 var meta = {
   name: "tokens",
   version: "0.1.0",
-  "api-version": "J9oN",
+  "api-version": util['api-version'],
   manifest: {
     burn: 'async',
     create: 'async', 
-    flag: 'async',
+    debug: 'sync',
     give: 'async',
     help: 'sync',
-    list: 'async',
-    trace: 'async',
-    unflag: 'async',
-    validate: 'async'
+    operations: 'source',
+    identities: {
+      alias: 'async',
+      create: 'async',
+      follow: 'async',
+      list: 'async'
+    },
+    types: 'async',
+    valid: 'async',
+    validate: {
+      format: 'sync',
+      requirements: 'async'
+    }
   },
   init: function (ssb, config) {
-    if (!ssb.query) throw new Error('ssb.query (https://github.com/ssbc/ssb-query) is required on ssb-server.')
+    if (!ssb.query) throw new Error("ssb.query " +
+                                    "(https://github.com/ssbc/ssb-query) " +
+                                    "is required on ssb-server.")
 
     // Set properties first to preserve lexicographic order
     var api = {
+      ancestors: null,
+      balance: null,
       burn: null,
       create: null,
+      debug: null,
+      _debugFlag: false,
       flag: null,
       give: null,
       help: null,
-      list: null,
+      identities: null,
+      operations: null,
+      tokenType: null,
       trace: null,
       unflag: null,
-      validate: null
+      unspent: null,
+      valid: null,
+      validate: {}
     }
-    api['list'] = list(ssb,api) 
     api['create'] = create(ssb,api)
+    api['debug'] = function (bool) { api._debugFlag = !!bool }
     api['give'] = give(ssb,api)
     api['burn'] = burn(ssb,api) 
-    api['validate'] = validate(ssb,api)
+    api['balance'] = balance(ssb,api)
+    api['identities'] = identities(ssb,api)
+    api['operations'] = operations(ssb,api)
+    api['types'] = types(ssb,api)
+    api['unspent'] = unspent(ssb,api)
+    var validObj = valid(ssb,api)
+    api['valid'] = validObj.method 
+    api['validate'].cache = validObj.cache
     api['validate'].format = format(ssb,api)
     api['validate'].requirements = requirements(ssb,api)
 
+
     api['flag'] = function (cb) { return cb(null)  }
-    api['help'] = function () { return { description: 'Tokens for community economics.', commands: {} } } 
+    api['help'] = function () { return { 
+        description: 'Tokens for community economics.', 
+        commands: {} 
+    } } 
     api['trace'] = function (cb) { return cb(null)  }
     api['unflag'] = function (cb) { return cb(null)  }
+    api['tokenType'] = tokenType
+    api['ancestors'] = ancestors(ssb,api)
+
     return api
   }
 }
-
-var createType = 'tokens/' + meta['api-version'] + '/create'
-var giveType = 'tokens/' + meta['api-version'] + '/give'
-var burnType = 'tokens/' + meta['api-version'] + '/burn'
-var flagType = 'tokens/' + meta['api-version'] + '/flag'
-var unflagType = 'tokens/' + meta['api-version'] + '/unflag'
 
 module.exports = meta

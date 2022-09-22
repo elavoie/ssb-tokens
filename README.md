@@ -87,6 +87,10 @@ ride on the boat, or other services offered by the crew.
     ssb-tokens burn "%redeemed_token"
 ```
 
+See [./test/alchemist.js](./test/alchemist.js) for implementation
+of this example with the [API](doc/api.md) instead of the 
+command-line interface.
+
 ### 2. Community Supported Agriculture
 
 Farmer sells credits for baskets of products at the beginning of a season. Once
@@ -125,6 +129,10 @@ and sell the surpluses to other participants using the same credits.
     ssb-tokens burn %baskets_redeemed
 ```
 
+See [./test/csa.js](./test/csa.js) for implementation
+of this example with the [API](doc/api.md) instead of the 
+command-line interface.
+
 #### Redeeming with Explicit Distributor
 
 @distributor offers a distribution service to buyers:
@@ -145,6 +153,7 @@ and sell the surpluses to other participants using the same credits.
 
 ```
     ssb-tokens give 1 "Distribution Credit" --desc="%basket_transfer" @buyer
+    # Outputs: %distribution_credit
 ```
 
 @distributor redeems the basket from @farmer:
@@ -157,7 +166,7 @@ and sell the surpluses to other participants using the same credits.
 @buyer redeems the basket from @distributor:
 
 ```
-    ssb-tokens give 1 "Distribution Credit" @distributor
+    ssb-tokens give %distribution_credit @distributor
     # Outputs: %distribution_redeeming
 ```
 
@@ -172,6 +181,10 @@ and sell the surpluses to other participants using the same credits.
 ```
     ssb-tokens burn %distribution_redeeming 
 ```
+
+See [./test/csa-w-distributor.js](./test/csa-w-distributor.js) for
+implementation of this example with the [API](doc/api.md) instead of the
+command-line interface.
 
 ### 3. Fidelity Program
 
@@ -192,10 +205,10 @@ free sandwich.).
     ssb-tokens give 1 "Shop Point" @customer
 ```
 
-After 20 sandwiches, @customer redeems the points for a free sandwich:
+After 10 sandwiches, @customer redeems the points for a free sandwich:
 
 ```
-    ssb-tokens give 20 "Shop Point" @shop
+    ssb-tokens give 10 "Shop Point" @shop
     # Outputs: %redeemed_points
 ```
 
@@ -204,6 +217,10 @@ After 20 sandwiches, @customer redeems the points for a free sandwich:
 ```
     ssb-tokens burn %redeemed_points
 ```
+
+See [./test/fidelity.js](./test/fidelity.js) for
+implementation of this example with the [API](doc/api.md) instead of the
+command-line interface.
 
 ### 4. Sweat-Equity Open Source Development
 
@@ -215,8 +232,8 @@ to buy back volunteer credits from the oldest to the newest.
 @maintainer records the help:
 
 ```
-    ssb-tokens create 2 "SSB Hour"
-    ssb-tokens give 2 "SSB Hour" @volunteer
+    ssb-tokens create 2 "SSB-Tokens Hour" --unit "Hour"
+    ssb-tokens give 2 "SSB-Tokens Hour" @volunteer
 ```
 
 @backer donates to @maintainer:
@@ -229,7 +246,7 @@ to buy back volunteer credits from the oldest to the newest.
 @volunteer redeems one (and keeps the other as social recognition):
 
 ```
-    ssb-tokens give 1 "SSB Hour" @maintainer
+    ssb-tokens give 1 "SSB-Tokens Hour" @maintainer
     # Outputs: %redeemed_hour
 ```
 
@@ -239,6 +256,9 @@ to buy back volunteer credits from the oldest to the newest.
     ssb-tokens give 10 "USD" @volunteer
     ssb-tokens burn %redeemed_hour
 ```
+
+See [./test/osd.js](./test/osd.js) for implementation of this example with the
+[API](doc/api.md) instead of the command-line interface.
 
 # Related Work
 

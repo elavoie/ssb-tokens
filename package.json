@@ -4,7 +4,8 @@
   "description": "Tokens for community economics. Built with Secure-Scuttlebutt (https://scuttlebutt.nz/).",
   "main": "src/index.js",
   "bin": {
-    "ssb-tokens": "./bin/index.js"
+    "ssb-tokens": "./bin/index.js",
+    "tok": "./bin/index.js"
   },
   "scripts": {
     "test": "node test/index.js",
@@ -26,16 +27,53 @@
     "url": "https://github.com/elavoie/ssb-tokens/issues"
   },
   "homepage": "https://github.com/elavoie/ssb-tokens",
+  "engines": {
+    "node": ">=0.10.0"
+  },
   "dependencies": {
     "crypto": "^1.0.1",
+    "debug": "^4.3.4",
+    "dgram-broadcast": "^1.0.0",
     "minimist": "^1.2.6",
-    "ssb-ref": "^2.16.0",
+    "multiserver-address": "^1.0.1",
+    "pull-abortable": "^4.1.1",
+    "pull-defer": "^0.2.3",
+    "pull-many": "^1.0.9",
+    "pull-sorted-merge": "^1.0.5",
     "pull-stream": "^3.6.14",
-    "debug": "^4.3.4"
+    "secret-stack": "^6.4.1",
+    "ssb-about": "^2.0.1",
+    "ssb-backlinks": "^2.1.1",
+    "ssb-blobs": "^2.0.1",
+    "ssb-caps": "^1.1.0",
+    "ssb-client": "^4.9.0",
+    "ssb-conn": "^6.0.3",
+    "ssb-db": "^20.4.1",
+    "ssb-ebt": "^9.0.0",
+    "ssb-friends": "^5.1.7",
+    "ssb-gossip": "^1.1.1",
+    "ssb-invite": "^3.0.1",
+    "ssb-keys": "^7.2.2",
+    "ssb-lan": "^1.2.3",
+    "ssb-links": "^3.0.10",
+    "ssb-local": "^1.0.0",
+    "ssb-logging": "^1.0.0",
+    "ssb-master": "^1.0.3",
+    "ssb-no-auth": "^1.0.0",
+    "ssb-onion": "^1.0.0",
+    "ssb-ooo": "^1.3.3",
+    "ssb-plugins": "^1.0.4",
+    "ssb-private1": "^1.0.1",
+    "ssb-ref": "^2.16.0",
+    "ssb-replicate": "^1.3.3",
+    "ssb-replication-scheduler": "^2.0.5",
+    "ssb-social-index": "^1.1.1",
+    "ssb-suggest": "^1.3.0",
+    "ssb-unix-socket": "^1.0.0",
+    "ssb-ws": "^6.2.3"
   },
   "devDependencies": {
     "ssb-identities": "^2.1.1",
-    "ssb-keys": "^7.2.2",
     "ssb-server": "^15.3.0",
     "ssb-query": "^2.4.5",
     "tape": "^5.5.3"

@@ -1,0 +1,88 @@
+usage: ssb-tokens operations [<options>]
+
+List operations matching <options>.
+
+Examples:
+
+    ssb-tokens operations --participant alice --no-old --live
+    ssb-tokens operations --author alice --receiver bob
+    ssb-tokens operations --jsonlines --no-valid
+
+Filter options perform a logical AND between different options. To 
+perform a logical OR between groups of options, use you shell
+operators: 
+
+Example, equivalent to ssb-tokens operations --participant alice:
+
+    bash> cat <(ssb-tokens operations --au alice) \
+              <(ssb-tokens operations --rc alice)
+
+
+<options> (default?, default value, type):
+
+FILTERS
+
+  SSB_ID:
+
+    --au=ID, --author=ID (true, ID=any, SSB_ID)
+        SSB ID (public key) or alias of the author of operations. 
+        Can be repeated to match more than one author.
+
+    --pt=ID --participant=ID (false, ID=any, SSB_ID)
+        SSB ID (public key) or alias of a participant in operations,
+        which may be an author or a receiver.
+        Can be repeated to match more than one participant.
+
+    --rc=ID, --receiver=ID (true, ID=any, SSB_ID)
+        SSB ID (public key) or alias of the receiver of tokens. 
+        Can be repeated to match more than one receiver.
+
+
+  OPERATION:
+
+    --ot=OPTYPE, --operation-type=OPTYPE (true, OPTYPE=any, String)
+        Operation type among 'create', 'give' and 'burn'.
+        Can be repeated to match more than one operation type. If 
+        no type provided, matches all operations types, otherwise,
+        only match those provided.
+
+    --tt=TOKENTYPE, --token-type=TOKENTYPE (true, TOKENTYPE=any, String)
+        The token type of the token.
+        Can be repeated to match any of the supplied token types.
+
+  VALIDATION:
+
+    --invalid (false, --, Boolean)
+        Output invalid operations.
+
+    --valid (true, --, Boolean)
+        Output valid operations.
+
+    --no-valid (false, --, Boolean)
+        Do not output valid operations.
+
+OUTPUT
+    --live (false, --, Boolean)
+        Output incoming operations.
+
+    --no-old (false, --, Boolean)
+        Do not output operations already available locally.
+        
+    --old (true, --, Boolean)
+        Output operations already available locally.
+
+    --jsonlines (false, --, Boolean)    
+        Outputs each operation as a JSON object on a single line
+
+    --json (false, --, Boolean)    
+        Outputs each operation as a JSON object
+
+    --only-id (false, --, Boolean)
+        Outputs only the message key of each operation.
+
+    --debug (false, --, Boolean)
+        Print debugging information on the standard error
+    
+
+See 'ssb-tokens help ssb' for an explanation of the Secure-Scuttlebutt 
+concepts (ex: SSB_MSG_ID) used.

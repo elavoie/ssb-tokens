@@ -36,3 +36,10 @@ It may save typing to choose option names in camelCase (and would be more idioma
 
 The library can work with a minimal number of operations offered by ssb-server,
 so as to avoid unduly loading plugins that are not useful to other applications. Moreover, the connection to [ssb-server](https://github.com/ssbc/ssb-server) is done through [ssb-client](https://github.com/ssbc/ssb-client) for concurrent operations with other currently running applications, such as [Patchwork](https://github.com/ssbc/patchwork) or [Oasis](https://github.com/fraction/oasis).
+
+## No silent failures and useful error messages
+
+Mistakes in usage of API should always lead to explicit error messages. Error
+messages should be as explicit as possible to provide the context of the error
+and what can be done to fix it. Ideally, there should be no need for debugging
+as the full context should be provided by the error itself.

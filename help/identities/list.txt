@@ -1,0 +1,43 @@
+usage: ssb-tokens identities list [<options>]
+
+List identities. Defaults to all identities appearing in SSB messages.
+
+Examples:
+
+    ssb-tokens identities list --alias-prefix "name"
+    ssb-tokens identities list --used --own
+    ssb-tokens identities list --token-type 4199ad6503e6903e
+
+<options> (default?, default value, type):
+
+FILTERS
+
+    --alias-prefix=PREFIX (true, PREFIX='', String)
+        List only identities with an associated alias that starts with PREFIX.
+
+    --own (false, --, Boolean)
+        List only the identities with locally accessible private keys. 
+
+    --tt=TOKENTYPE, --token-type=TOKENTYPE (true, TOKENTYPE=any, String)
+        List only identities involved in operations with TOKENTYPE.
+
+    --used (false, --, Boolean)
+        List only identities that were used in token operations.
+
+
+OUTPUT
+    --alias (true, --, Boolean)
+        Output the associated name as well. Only valid with --json.
+
+    --no-alias (false, --, Boolean)
+        Do not output the associated name.
+
+    --json (true, --, Boolean)
+        Output in JSON format.
+
+    --only-id (false, --, Boolean)
+        Output only the SSB Log ID.
+ 
+
+See 'ssb-tokens help ssb' for an explanation of the Secure-Scuttlebutt 
+concepts (ex: SSB_MSG_ID) used.

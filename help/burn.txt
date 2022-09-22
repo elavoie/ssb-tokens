@@ -1,28 +1,28 @@
-usage: ssb-tokens burn [<options>] <tokens>
+usage: ssb-tokens burn <tokens> [ <tokens>, ... ] [ <options> ]
 
-Destroy <tokens>. <tokens> can be the creation message of the tokens 
-   (SSB_MSG_ID), a transfer message (SSB_MSG_ID), the type of currency 
-   mentioned in a creation message (ex: "USD"), or the description 
-   referred by the creation message (SSB_MSG_ID).
+Destroy <tokens>. 
 
-You can only destroy tokens that you own.
+<tokens> can be a creation or a transfer operation (SSB_MSG_ID).  
 
 Examples:
 
-    ssb-tokens burn "hours"
-    ssb-tokens burn "USD"
-    ssb-tokens burn "%AFdafed..."
+    ssb-tokens burn "%AFda..." --author @bob
+    ssb-tokens burn "%AFda..." "%BteA..."
+
+You can only destroy tokens that you own. <tokens> should be operations that
+have not been spent, partially or completely. To burn amounts from partially
+spent sources, give them to yourself first and then burn the new give operation.
 
 <options> (default?, default value, type):
-    --owner=ID (true, ID=valueOf(".ssb/secret/public"), SSB_ID)
+    --author=ID (true, ID=valueOf(".ssb/secret/public"), SSB_ID)
         SSB ID (public key) of the owner of tokens. Your SSB installation 
         should have access to the corresponding private key for the 
         operation to succeed.
 
     --description=DESC (true, DESC=null, SSB_MSG_ID)
-        Describes the purpose of the burn. DESC can either be null or an
+        Describes the purpose of the transfer. DESC can either be null or an
         SSB Message ID. The description message can be created by any
         author (i.e. it can be someone else than you).
 
-See 'ssb-tokens help ssb' for an explanation of the Secure-Scuttlebutt concepts
-(ex: SSB_MSG_ID) used.
+See 'ssb-tokens help ssb' for an explanation of the Secure-Scuttlebutt 
+concepts (ex: SSB_MSG_ID) used.

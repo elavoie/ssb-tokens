@@ -1,0 +1,55 @@
+usage: ssb-tokens types [<name>] [<options>]
+
+Find token types matching <name> and <options> and their other properties. If
+no <name> or <options> are provided, return all known tokens types.
+
+Examples:
+    
+    ssb-tokens types "SSB-Tokens Hours"
+    ssb-tokens types --unit "EUR"
+    ssb-tokens types --author @bob --name "Points" 
+
+
+<options> (default?, default value, type):
+
+FILTERS
+
+    --au=ID, --author=ID (true, ID=any, SSB_ID)
+        SSB ID (public key) or alias of the creator of tokens. 
+
+    --dm=DEC, --decimals=DEC (true, DEC=any, Number)
+        The tokens can be given in units with no more than DEC decimals.
+
+    --dp=DESC, --description=DESC (true, DESC=any, SSB_MSG_ID)
+        Describes the purpose of the tokens. DESC can either be null or an
+        SSB Message ID. 
+
+    --nm=NAME, --name=NAME (true, NAME=any, String)
+        Name of the token. Same as providing a value for <name>.
+
+    --un=UNIT, --unit=UNIT (true, UNIT=any, String)
+        The unit in which the tokens are denominated. 
+
+    --tt=TOKENTYPE, --token-type=TOKENTYPE (true, TOKENTYPE=any, String)
+        The token type of the token.
+
+OUTPUT
+    -s, --single (false, false, Boolean)
+        Output the token type if it results in a single match,
+        otherwise error. 
+      
+    --csv (false, false, Boolean)
+        Output the token types and properties separated by commas.
+
+    --no-csv-header (false, false, Boolean)
+        Do not print header when using --csv.
+    
+    -t, --only-type, --no-properties (false, false, Boolean)
+        Only print the tokenType values, without properties.
+        Overrides --csv and --json.
+
+    --json (true, true, Boolean)
+        Output types in JSON format.
+
+See 'ssb-tokens help ssb' for an explanation of the Secure-Scuttlebutt 
+concepts (ex: SSB_MSG_ID) used.
