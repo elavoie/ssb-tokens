@@ -407,7 +407,44 @@ error if `sources` have been partially or completed spent.
    [ssb-client](https://github.com/ssbc/ssb-client) instance, is correctly
 running.
 
-### ssb.tokens.ancestors(sources, ?opts, cb(err, tangle))
+### ssb.tokens.ancestors(sources, ?options, cb(err, tangle))
+
+Retrieve the full ancestry, i.e. transitive sources, of `sources`.  `sources` 
+can be one of the followings:
+
+- `operation-id`
+
+- `{ id: operation-id }`
+
+- `[ operation-id, ... ]` (a list of [Operation ID](#operation-identifier))
+
+Options can be the following:
+
+```js
+{
+    recurse: Boolean,          // Default: true
+}
+```
+
+where:
+
+- `recurse`: If `true`, transitively obtain ancestry of sources up to the root,
+             otherwise only obtain the sources of `sources`.
+ 
+Return a `tangle`, i.e. directed-acyclic graph, represented as an 
+object in the following format:
+
+```` json
+    tangle = {
+        msgId: {
+            srcId: amount,
+            ...
+        }, ... 
+    }
+````
+
+The `msgId` of  messages with no `sources`, such as a create message, 
+are as `srcId` of other messages.
 
 #### Errors
 

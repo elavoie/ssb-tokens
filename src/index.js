@@ -1634,8 +1634,13 @@ function ancestors (ssb, api) {
     if (typeof opts === "function")
       opts = {}
 
-    opts.noRecurse = opts.noRecurse || true
+    opts.recurse = typeof opts.recurse === 'undefined' ? true : opts.recurse
 
+    if (!Array.prototype.isPrototypeOf(sources))
+      sources = [ sources ]
+
+    // Support both direct Message Ids and the source format, e.g. { id: MsgId }, 
+    // of create and give operations
     sources.forEach(function (s) {
       var id = s.id || s
       tangle[id] = {}
@@ -1645,7 +1650,7 @@ function ancestors (ssb, api) {
     function next () {
       if (queue.length === 0) {
         if (count !== Object.keys(tangle).length)
-          throw new Error("Implementation error")
+          return cb(new Error("Internal implementation error"))
 
         if (notfound.length > 0) {
           var err = new Error("Sources not found: " + 
@@ -1653,7 +1658,7 @@ function ancestors (ssb, api) {
           err.notFound = true
           err.sources = notfound
           err.tangle = tangle
-          return cb(err)
+          return cb(err, tangle)
         } else {
           return cb(null, tangle)
         }
@@ -1667,10 +1672,15 @@ function ancestors (ssb, api) {
           if (err.notFound) {
             notfound.push(id)
             tangle[id] = false
-            return next()
+
+            // Queue next with the event queue,
+            // otherwise errors thrown inside recursive
+            // calls are caught by ssb.get
+            return setImmediate(next)
           } else {
             var err_ =  new Error("Error retrieving message " + id +
                                   ": \n" + err.message)
+            console.error(err_)
             err_.err = err
             return cb(err_)
           }
@@ -1683,7 +1693,7 @@ function ancestors (ssb, api) {
           return cb(err)
         }
 
-        if (!opts.noRecurse && op.sources) {
+        if (opts.recurse && op.sources) {
           op.sources.forEach(function (s) {
             var sId = s.id || s
             if (!tangle[sId]) {
@@ -1691,11 +1701,14 @@ function ancestors (ssb, api) {
               queue.push(sId)
             }
             
-            tangle[id][sId] = true
+            tangle[id][sId] = s.amount || true
           })
         }
 
-        next()
+        // Queue next with the event queue,
+        // otherwise errors thrown inside recursive
+        // calls are caught by ssb.get
+        return setImmediate(next)
       })
     }
 

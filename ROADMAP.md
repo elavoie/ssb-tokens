@@ -28,7 +28,7 @@
            [x] Add human readable 'show' output
        [x] Burn
            [x] Add human readable 'show' output
-       [ ] Operations (list operations)
+       [x] Operations (list operations)
            [x] Fix bug when participant and type does not filter properly
            [x] Add automatic connection to running ssb-server in all commands
            [x] Add automatic connection between two ssb-server
@@ -40,8 +40,8 @@
            [x] Factored out the implementation of 'show' into a 'stringify' method and 
                added it in 'bin/util.js' for easier reuse.
            [x] Add unit tests
-           [ ] Commit latest versions to test with others
-       [ ] Ancestors / Trace (operation)
+           [x] Commit latest versions to test with others
+       [x] Ancestors (operation)
        [ ] Unspent (operation)
        [ ] Balance (token type, identity)
        [ ] Validate (operation)

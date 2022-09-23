@@ -1,0 +1,36 @@
+usage: ssb-tokens ancestors <message-id> [<options>]
+
+List the full ancestry of all sources of <message-id>, up to the creation
+messages from older to newest. Ancestors missing locally are separately listed 
+on standard error.
+
+Examples:
+     
+    ssb-tokens ancestors %ABcd...    
+    ssb-tokens ancestors %ABcd... --dot | graph-easy   
+
+<options> (default?, default value, type):
+    --full-id (false, --, Boolean)
+        Set prefix-size to full length of message identifiers.
+
+    --prefix-size=S (true, 5, Number)
+        Number of leading characters used to summarize message identifiers.
+
+    --json-tangle (false, --, Boolean)
+        Output the tangle in as json.
+
+    --json (false, --, Boolean)    
+        Outputs all ancestors in a single json object.
+
+    --jsonlines (false, --, Boolean)
+        Outputs all ancestors as json objects, one per line.
+
+    --graph-easy (false, --, Boolean)
+        Outputs the ancestry tangle in the DOT format, 
+        compatible with GraphViz and graph-easy.
+
+See 'ssb-tokens help ssb' for an explanation of the Secure-Scuttlebutt 
+concepts (ex: SSB_MSG_ID) used. See the following references:
+  
+  1. Graph::Easy https://metacpan.org/dist/Graph-Easy/view/bin/graph-easy
+

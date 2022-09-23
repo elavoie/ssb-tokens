@@ -49,6 +49,13 @@ module.exports = function (ssb) {
         return cb(new Error("Invalid message id: " + msgId))
       }
 
+      cb = cb || options
+
+      if (typeof cb !== 'function') throw new Error('Invalid callback ' + cb)
+
+      if (typeof options === 'function')
+        options = {}
+
       if (options['ssb-message'] || options['ssb-message-value'])
         options.json = true
 

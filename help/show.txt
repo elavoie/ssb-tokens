@@ -1,6 +1,6 @@
-usage: ssb-tokens show <id> [<options>]
+usage: ssb-tokens show <message-id> [<options>]
 
-Show the operation associated to <id>. By default, describe the operation
+Show the operation associated to <message-id>. By default, describe the operation
 in a human readable format with participants named after their aliases.
 
 Examples:

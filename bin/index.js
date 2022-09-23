@@ -97,6 +97,7 @@ ssbClient(null, SSB_TOKENS_DIR, function (err, ssb, config) {
   }
 
   var supported = {
+    ancestors: true,
     burn: true,
     create: true,
     give: true,
@@ -111,11 +112,16 @@ ssbClient(null, SSB_TOKENS_DIR, function (err, ssb, config) {
     console.error("ssb-tokens: invalid command '" + args._[2] + "'")
     close()
   } else {
-    require('./' + cmd)(ssb, args, function (err) {
-      if (err) 
-        console.error(err.message)
+    try {
+      require('./' + cmd)(ssb, args, function (err) {
+        if (err) 
+          console.error(err.message)
 
+        close()
+      })
+    } catch (err) {
+      console.error(err)
       close()
-    })
+    }
   } 
 })
