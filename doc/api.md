@@ -604,9 +604,9 @@ Options can be the following:
 
 where:
 
-- `match.author`: is the [SSB ID](./help/ssb.txt) or 
-   [SSB Keys](https://github.com/ssbc/ssb-keys) that created the tokens.
-- `match.*` properties, match those of the create operation  (see
+- `match.author`: is the [SSB ID](./help/ssb.txt) that created the tokens.
+  received the tokens.
+- other `match.*` properties, match those of the create operation  (see
   `ssb.tokens.create`).
 - `validate`: if `true` (default), returns only tokenTypes of valid create
   operations, otherwise return all tokenTypes even from invalid create messages.

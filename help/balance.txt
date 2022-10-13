@@ -1,0 +1,40 @@
+usage: ssb-tokens balance [<owner> <token-type>] [<options>] 
+
+
+Examples:
+    
+    ssb-tokens balance aba8619b29020954 @bob
+    ssb-tokens balance --token-type aba8619b29020954
+    ssb-tokens balance --owner bob --owner alice
+
+<options> (default?, default value, type):
+
+FILTERS
+
+    --ow=ID, --owner=ID (true, ID=any, SSB_ID)
+        SSB ID (public key) or alias of the onwer of tokens. 
+        Can be repeated to match more than one owner.
+
+    --tt=TOKENTYPE, --token-type=TOKENTYPE (true, TOKENTYPE=any, String)
+        The token type of the token.
+        Can be repeated to match any of the supplied token types.
+
+OUTPUT
+    --messages (false, --, Boolean)
+        Output message identitifers that are sources of unspent tokens.
+
+    --authors (false, --, Boolean)
+        Output the total amounts coming from each author (SSB_ID)
+
+    --live (false, --, Boolean)
+        Output updated balance(s) following reception of each new operation.
+
+    --jsonlines (false, --, Boolean)    
+        Outputs each balance as a JSON object on a single line.
+
+    --json (false, --, Boolean)    
+        Outputs each balance as a multiline-formatted JSON object.
+
+See 'ssb-tokens help ssb' for an explanation of the Secure-Scuttlebutt 
+concepts (ex: SSB_MSG_ID) used.
+

@@ -42,8 +42,8 @@
            [x] Add unit tests
            [x] Commit latest versions to test with others
        [x] Ancestors (operation)
+       [x] Balance (token type, identity)
        [ ] Unspent (operation)
-       [ ] Balance (token type, identity)
        [ ] Validate (operation)
        [ ] Block (identities operation)
        [ ] Streamline initial bootstrap and interop
@@ -53,10 +53,18 @@
            [x] Use a different local ssb-db for alpha release ('~/.ssb-tokens')
 
 # 3. Improvements towards 1.0
+    [ ] Support for more use cases
+        [ ] Personal library (keeping track of book lent with tokens)
+        [ ] Tainting tokens from untrusted sources 
+
     [ ] More meaningful error messages when:
         [ ] An alias is used for which the private key is not in the local database.
         [ ] An operation cannot succeed because there is a missing source dependency
             in the database, preventing validation.
+
+    [ ] Convenience
+        [ ] API + CLI: Enable listing token types per receiver and per participant
+        [ ] CLI: Enable listing the balances of all tokens held by a given participant
 
     [ ] Make token type easier to specify 
         [ ] Add aliasing of token types ("tokenType:XXX", "tt:XXX")

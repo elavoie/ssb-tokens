@@ -98,6 +98,7 @@ ssbClient(null, SSB_TOKENS_DIR, function (err, ssb, config) {
 
   var supported = {
     ancestors: true,
+    balance: true,
     burn: true,
     create: true,
     give: true,
