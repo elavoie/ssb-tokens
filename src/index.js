@@ -894,6 +894,7 @@ function balance (ssb, api) {
                       ", expected SSB Log ID"))
 
     var bal = {
+      type: 'tokens/' + meta['api-version'] + '/balance',
       tokenType: tokenType,
       owner: owner,
       amount: 0,
@@ -1400,7 +1401,7 @@ function identities (ssb, api) {
 
     if (tokenType) {
       f1.value.content.tokenType = tokenType 
-      f2.value.content.tokentype = tokenType
+      f2.value.content.tokenType = tokenType
     }
 
     return pull(
@@ -2233,6 +2234,8 @@ var meta = {
   version: "0.1.0",
   "api-version": util['api-version'],
   manifest: {
+    ancestors: 'async',
+    balance: 'async', 
     burn: 'async',
     create: 'async', 
     debug: 'sync',

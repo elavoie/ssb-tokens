@@ -7,7 +7,7 @@ on standard error.
 Examples:
      
     ssb-tokens ancestors %ABcd...    
-    ssb-tokens ancestors %ABcd... --dot | graph-easy   
+    ssb-tokens ancestors %ABcd... --graph-easy | graph-easy   
 
 <options> (default?, default value, type):
     --full-id (false, --, Boolean)
