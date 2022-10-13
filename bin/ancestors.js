@@ -76,6 +76,7 @@ module.exports = function (ssb, args, cb) {
             output[msg.key] = msg
           })
           console.log(JSON.stringify(output, null, 2))
+          return cb(null)
         })
       )
     } else if (args.jsonlines) {
@@ -89,7 +90,7 @@ module.exports = function (ssb, args, cb) {
         pull.values(keys),
         pull.asyncMap((k, cb) => util.stringify(k, (err, str) => {
           if (err) cb(err)
-          else cb(null, prefix(k) + ": " + str) 
+          else cb(null, prefix(k) + ".. " + str) 
         }) ),
         pull.drain(console.log, cb)
       )
