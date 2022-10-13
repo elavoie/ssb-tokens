@@ -20,11 +20,15 @@ module.exports = function (ssb, args, cb) {
   if (args._.length >= 5)
     owners.push(args._[4])
 
-  if (args['token-type'])
-    tokenTypes = tokenTypes.concat(args['token-type'])
+  if (args['token-type'] || args['tt'])
+    tokenTypes = tokenTypes
+      .concat(args['token-type'] || [])
+      .concat(args['tt'] || [])
 
-  if (args['owner'])
-    owners = owners.concat(args['owner'])
+  if (args['owner'] || args['ow'])
+    owners = owners
+      .concat(args['owner'] || [])
+      .concat(args['ow'] || [])
 
 
   var util = binUtil(ssb)

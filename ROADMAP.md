@@ -65,6 +65,8 @@
     [ ] Convenience
         [ ] API + CLI: Enable listing token types per receiver and per participant
         [ ] CLI: Enable listing the balances of all tokens held by a given participant
+        [ ] CLI (balance --live): Add live updates of balances upon new received operations
+        [ ] CLI: Enable listing of all unspent amounts for each token and associated operations
 
     [ ] Make token type easier to specify 
         [ ] Add aliasing of token types ("tokenType:XXX", "tt:XXX")
@@ -113,21 +115,7 @@
         [ ] Message Schemas
         [x] Valid and Invalid Sequences of Messages (see tests)
 
-## 4. Paper: Ensuring Trust in Economic Transactions in Single-Writer Append-Only Log Systems
-    [ ] Add performance tests using traces from Ethereum ERC20 transactions
-    [ ] Implement validation frontier optimization to lower memory usage
-
-    [ ] Study Similarity between SSB and Holochain
-    [ ] Fully understand "The consensus number of a cryptocurrency"
-    [ ] Identify Primitives Required for a Mutual Credit System (ideally similar to SSB-Tokens)
-    [ ] Formal Model of the Problem
-    [ ] Proof-of-Insolvency
-    [ ] Proof-of-Fork
-    [ ] Proof-of-Witness
-    [ ] Theorems
-    [ ] Empirical Evaluation of Actual Community Transactions
-
-## 5. Real-World Deployment Considerations
+## 5. Future Real-World Deployment Considerations
 
     [ ] Losing Access to Tokens as an Issuer and User
     [ ] Invalidating Tokens in Circulation
@@ -136,3 +124,4 @@
     [ ] Creating Paper Trails for Accounting
     [ ] Handling Connectivity, Synchronization, and Indexing Issues 
     [ ] Paper+Printer+Point-of-Sale Design?
+    [ ] Smartcard deployment?

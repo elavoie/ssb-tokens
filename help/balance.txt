@@ -1,4 +1,4 @@
-usage: ssb-tokens balance [<owner> <token-type>] [<options>] 
+usage: ssb-tokens balance [<token-type> <owner>] [<options>] 
 
 
 Examples:
@@ -25,9 +25,6 @@ OUTPUT
 
     --authors (false, --, Boolean)
         Output the total amounts coming from each author (SSB_ID)
-
-    --live (false, --, Boolean)
-        Output updated balance(s) following reception of each new operation.
 
     --jsonlines (false, --, Boolean)    
         Outputs each balance as a JSON object on a single line.
