@@ -1,0 +1,38 @@
+usage: ssb-tokens unspent [<message-id>] [<options>] 
+
+Show the number of unspent tokens associated to <message-id>.
+Options may also be used to show unspent amounts associated to 
+owners and token types.
+
+Examples:
+    
+    ssb-tokens unspent %nJN9...
+    ssb-tokens unspent --token-type aba8619b29020954
+    ssb-tokens unspent --token-type aba8619b29020954 --owner bob
+
+<options> (default?, default value, type):
+
+FILTERS
+
+    --ow=ID, --owner=ID (true, ID=any, SSB_ID)
+        Shows the unspent tokens of owner(s), specified as SSB ID (public key)
+        or alias. Can be repeated to match more than one owner. Ignored if
+        <message-id> is supplied.
+
+    --tt=TOKENTYPE, --token-type=TOKENTYPE (true, TOKENTYPE=any, String)
+        Shows the unspent tokens matching the token type(s). Can be repeated to
+        match any of the supplied token types. Ignored if <message-id> is supplied.
+
+OUTPUT
+
+    --messages (false, --, Boolean)
+        Output message identitifers that are sources of unspent tokens.
+        Ignored if <message-id> has been supplied.
+
+    --authors (false, --, Boolean)
+        Output the total amounts coming from each author (SSB_ID)
+        Ignored if <message-id> has been supplied.
+
+See 'ssb-tokens help ssb' for an explanation of the Secure-Scuttlebutt 
+concepts (ex: SSB_MSG_ID) used.
+
