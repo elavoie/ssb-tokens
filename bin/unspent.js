@@ -5,6 +5,17 @@ var pull = require('pull-stream')
 var binUtil = require('./util')
 
 module.exports = function (ssb, args, cb) {
+  if (args.help ||
+      (args._.length < 4 &&
+       !args['tt'] &&
+       !args['token-type'] &&
+       !args['ow'] &&
+       !args['owner'])) {
+    var help = path.join(__dirname, '../help/unspent.txt')
+    process.stdout.write(fs.readFileSync(help))
+    return cb(null)
+  }
+
   var tokenTypes = []
   var owners = []
   var msgId = null
