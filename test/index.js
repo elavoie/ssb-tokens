@@ -40,6 +40,7 @@ var tests = [
   require('./fidelity.js'),
   require('./osd.js'),
   require('./identities/list.js'),
+  require('./owner.js'),
   require('./operations.js')
 ]
 tests.forEach(function (t) { 

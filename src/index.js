@@ -1338,6 +1338,35 @@ function operations (ssb, api) {
   }
 }
 
+function owner (ssb, api) {
+  return function (msgId, cb) {
+    if (typeof cb !== "function") 
+      throw new Error("owner: Invalid callback " + (typeof cb) + 
+                      ", expected a callback cb(err, owner)")
+
+    if (!ref.isMsgId(msgId))
+      return cb(new Error("owner: Invalid message id "+JSON.stringify(msgId) +
+                          ", expected an SSB Message ID"))
+
+    ssb.get({ id: msgId, meta: true }, function (err, msg) {
+      if (err) return cb(err)
+
+      api.valid(msg, function (err, msg) {
+        if (err) return cb(err)
+
+        var op = msg.value.content
+        if (util.isCreate(op))
+          return cb(null, msg.value.author)
+        else if (util.isGive(op))
+          return cb(null, msg.value.content.receiver)
+        else
+          return cb(new Error("owner: No tokens created or received in " +
+                               msgId))
+      })
+    })
+  }
+}
+
 function identities (ssb, api) {
 
   function usedId (opts) {
@@ -2241,13 +2270,14 @@ var meta = {
     debug: 'sync',
     give: 'async',
     help: 'sync',
-    operations: 'source',
     identities: {
       alias: 'async',
       create: 'async',
       follow: 'async',
       list: 'async'
     },
+    operations: 'source',
+    owner: 'async',
     types: 'async',
     valid: 'async',
     validate: {
@@ -2273,6 +2303,7 @@ var meta = {
       help: null,
       identities: null,
       operations: null,
+      owner: null,
       tokenType: null,
       trace: null,
       unflag: null,
@@ -2287,6 +2318,7 @@ var meta = {
     api['balance'] = balance(ssb,api)
     api['identities'] = identities(ssb,api)
     api['operations'] = operations(ssb,api)
+    api['owner'] = owner(ssb,api)
     api['types'] = types(ssb,api)
     api['unspent'] = unspent(ssb,api)
     var validObj = valid(ssb,api)

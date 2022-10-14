@@ -582,6 +582,17 @@ Throws an error if options are of the wrong types or do not follow the
 expected format. The pull-stream source may also raise a callback error,
 see [ssb-query](https://github.com/ssbc/ssb-query).
 
+### ssb.tokens.owner(msgId, cb(err, owner))
+
+Returns the [SSB_ID](./help/ssb.txt) of the owner of the tokens in `msgId`
+([SSB Message ID](#ssb-message-id)).
+
+#### Errors
+
+Returns an error in `err` if `msgId` does not contain tokens or is invalid.
+Otherwise, `err` is null and `owner` is the owner of the tokens.
+
+
 ### ssb.tokens.types(?options, cb(err, types))
 
 Find `tokenTypes` matching `options`. Returns a dictionary `types` that
