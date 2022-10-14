@@ -1,0 +1,20 @@
+usage: ssb-tokens identities unfollow <ssb-id> [<options>]
+
+Stop following another <ssb-id>. Their messages may not be
+replicated anymore but existing messages say in the local
+database.
+
+Examples:
+
+    ssb-tokens identities unfollow @ABCD...
+    ssb-tokens identities unfollow @bob --author @alice
+
+<options> (default?, default value, type):
+
+    --author=ID (true, ID=valueOf(".ssb/secret/public"), SSB_ID)
+        SSB ID (public key) of the follower. Your SSB installation 
+        should have access to the corresponding private key for the 
+        operation to succeed. (included in tokenType)
+
+See 'ssb-tokens help ssb' for an explanation of the Secure-Scuttlebutt 
+concepts (ex: SSB_MSG_ID) used.

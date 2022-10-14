@@ -15,7 +15,8 @@ module.exports = function (ssb, args, cb) {
     alias: true,
     create: true,
     follow: true,
-    list: true
+    list: true,
+    unfollow: true
   }
 
   if (!supported[cmd]) {
