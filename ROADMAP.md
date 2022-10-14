@@ -45,7 +45,7 @@
        [x] Unspent (operation)
        [x] Balance (token type, identity)
            [x] Simplify after having moved some operations to unspent
-       [ ] Validate (operation)
+       [x] Validate (operation)
        [ ] Block (identities operation)
        [ ] Streamline initial bootstrap and interop
            [ ] Add 'init' command that initializes '~/.ssb-tokens' when missing

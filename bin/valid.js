@@ -17,6 +17,7 @@ module.exports = function (ssb, args, cb) {
     return cb(new Error("Invalid message ID " + JSON.stringify(msgId)))
 
   ssb.get({ id: msgId, meta: true}, function (err, msg) {
+    if (err) return cb(err)
 
     ssb.tokens.valid(msg, function (err, msg) {
       if (err) return cb(err)
