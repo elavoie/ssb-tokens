@@ -1,12 +1,12 @@
 usage: ssb-tokens balance [<token-type> <owner>] [<options>] 
 
-Outputs 
+Outputs the total number of tokens created, received, given, and burnt
+for each matching combination of <token-type> and <owner>.
 
 Examples:
     
     ssb-tokens balance aba8619b29020954 @bob
     ssb-tokens balance --token-type aba8619b29020954
-    ssb-tokens balance --owner bob --owner alice
 
 <options> (default?, default value, type):
 
@@ -21,12 +21,6 @@ FILTERS
         Can be repeated to match any of the supplied token types.
 
 OUTPUT
-
-    --messages (false, --, Boolean)
-        Output message identitifers that are sources of unspent tokens.
-
-    --authors (false, --, Boolean)
-        Output the total amounts coming from each author (SSB_ID)
 
     --jsonlines (false, --, Boolean)    
         Outputs each balance as a JSON object on a single line.

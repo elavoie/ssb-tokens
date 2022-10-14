@@ -42,8 +42,9 @@
            [x] Add unit tests
            [x] Commit latest versions to test with others
        [x] Ancestors (operation)
+       [x] Unspent (operation)
        [x] Balance (token type, identity)
-       [ ] Unspent (operation)
+           [x] Simplify after having moved some operations to unspent
        [ ] Validate (operation)
        [ ] Block (identities operation)
        [ ] Streamline initial bootstrap and interop

@@ -4,6 +4,15 @@ var ref = require('ssb-ref')
 var pull = require('pull-stream')
 var binUtil = require('./util')
 
+function sum (a,b) {
+  return a+b
+}
+
+function unique (s, x) {
+  s[x[0]] = (s[x[0]] || 0) + x[1]
+  return s
+}
+
 module.exports = function (ssb, args, cb) {
   if (args.help) {
     var help = path.join(__dirname, '../help/balance.txt')
@@ -54,46 +63,54 @@ module.exports = function (ssb, args, cb) {
 
           var tokName = (Object.values(types)[0] || {}).name
           console.log('@' + ownerName + ' owns ' + bal.amount + ' ' + tokName + ' (tokenType: ' + bal.tokenType + ')')
+          
+          var amount = function (id) { return bal.all[id].value.content.amount }
+          var giver = function (id) { 
+            return [bal.all[id].value.author, amount(id)] 
+          }
+          var receiver = function (id) { 
+            return [bal.all[id].value.content.receiver, amount(id)] 
+          }
 
-          if (args.messages) {
-            Object.values(bal.unspent).forEach(function (unspent) {
-              console.log('  ' + unspent.amount + ' from ' + unspent.id) 
-            })
-            console.log()
-            return cb(null)
-          } else if (args.authors) {
-            var authors = Object.values(bal.unspent).reduce(function (authors, unspent) {
-              var msgValue = bal.all[unspent.id].value
-              var amount = unspent.amount
-              var author = msgValue.author
+          var created = bal.created.map(amount).reduce(sum,0)
+          var burnt = bal.burnt.map(amount).reduce(sum,0)
 
-              if (!authors[author])
-                authors[author] = 0
+          var givers = bal.received.map(giver).reduce(unique, {})
+          var receivers = bal.given.map(receiver).reduce(unique, {})
 
-              authors[author] += amount
-              return authors
-            }, {})
+          var names = {}
 
-            pull(
-              pull.values(Object.keys(authors)),
-              pull.asyncMap(function (logId, cb) { 
-                authorName(logId, function (err, name) {
-                  if (err) return cb(err) 
-
-                  console.log('  ' + authors[logId] + ' from @' + name)
-                  return cb(null)
-                })
-              }),
-              pull.onEnd(function (err) {
-                if (err) return cb(err)
-
-                console.log()
+          pull(
+            pull.values(Object.keys(givers).concat(Object.keys(receivers))),
+            pull.unique(),
+            pull.asyncMap(function (id, cb) {
+              authorName(id, function (err, name) {
+                if (err) cb(err)
+                names[id] = name || id
                 return cb(null)
               })
-            )
-          } else {
-            return cb(null)
-          }
+            }),
+            pull.onEnd(function (err) {
+              if (err) return cb(err)
+
+              givers = Object.keys(givers).map((id) => ['@' + names[id], givers[id]])
+              receivers = Object.keys(receivers).map((id) => ['@' + names[id], receivers[id]])
+
+              console.log('    created ' + created)
+              console.log('    received ' +
+                               (givers.length ? 
+                                 givers.map((x) => x[1] + ' from ' + x[0]).join(', ') : 
+                                 '0'))
+              console.log('    gave ' + 
+                               (receivers.length ? 
+                                 receivers.map((x) => x[1] + ' to ' + x[0]).join(', ') :
+                                 '0'))
+              console.log('    burnt ' + burnt)
+              console.log()
+              
+              return cb(null)
+            })
+          )
         })
       })
     }
