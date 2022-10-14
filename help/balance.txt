@@ -1,5 +1,6 @@
 usage: ssb-tokens balance [<token-type> <owner>] [<options>] 
 
+Outputs 
 
 Examples:
     
@@ -12,7 +13,7 @@ Examples:
 FILTERS
 
     --ow=ID, --owner=ID (true, ID=any, SSB_ID)
-        SSB ID (public key) or alias of the onwer of tokens. 
+        SSB ID (public key) or alias of the owner of tokens. 
         Can be repeated to match more than one owner.
 
     --tt=TOKENTYPE, --token-type=TOKENTYPE (true, TOKENTYPE=any, String)
@@ -20,6 +21,7 @@ FILTERS
         Can be repeated to match any of the supplied token types.
 
 OUTPUT
+
     --messages (false, --, Boolean)
         Output message identitifers that are sources of unspent tokens.
 
