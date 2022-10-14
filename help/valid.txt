@@ -1,0 +1,10 @@
+usage: ssb-tokens valid <message-id> [<options>] 
+
+Check whether <message-id> is a valid SSB-Tokens operation.
+
+Examples:
+
+    ssb-tokens validate %nJN9...
+
+See 'ssb-tokens help ssb' for an explanation of the Secure-Scuttlebutt 
+concepts (ex: SSB_MSG_ID) used.

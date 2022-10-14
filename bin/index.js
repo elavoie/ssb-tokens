@@ -106,7 +106,8 @@ ssbClient(null, SSB_TOKENS_DIR, function (err, ssb, config) {
     operations: true,
     show: true,
     types: true,
-    unspent: true
+    unspent: true,
+    valid: true
   }
 
   var cmd = args._[2] 
