@@ -39,106 +39,115 @@ var SSB_TOKENS_DIR = args['dir'] || 'ssb-tokens'
 
 debug('using local database and config in ~/.' + SSB_TOKENS_DIR)
 
-var ssbTokensPath = path.join(home(), '.' + SSB_TOKENS_DIR)
-if (!fs.existsSync(ssbTokensPath) && command !== 'init') {
-  console.error('Invalid or inexisting local database at path ' + ssbTokensPath + '.') 
-  console.error("You can initialize a new one with 'ssb-tokens init'.")
-  process.exit(1)
-}
+if (command === 'init') {
+  try {
+    require('./' + command)(null, args, function (err) {
+      if (err) 
+        console.error(err.message)
+    })
+  } catch (err) {
+    console.error(err)
+  }
+} else {
 
-ssbClient(null, SSB_TOKENS_DIR, function (err, ssb, config) {
-  if (err) {
-    if (err.message !== "could not connect to sbot") {
-      console.error(err)
-      return process.exit(1)
-    }
+  var ssbTokensPath = path.join(home(), '.' + SSB_TOKENS_DIR)
+  if (!fs.existsSync(ssbTokensPath) && command !== 'init') {
+    console.error('Invalid or inexisting local database at path ' + ssbTokensPath + '.') 
+    console.error("You can initialize a new one with 'ssb-tokens init'.")
+    process.exit(1)
+  }
 
+  ssbClient(null, SSB_TOKENS_DIR, function (err, ssb, config) {
     if (command === 'init') {
       debug('skip starting an ssb-server with init command')
-      return 
-    } 
+    } else if (err) {
+      if (err.message !== "could not connect to sbot") {
+        console.error(err)
+        return process.exit(1)
+      }
 
-    debug('could not connect to a running ssb instance, starting a new one')
-    var ssb = Server({ appname: SSB_TOKENS_DIR })
+      debug('could not connect to a running ssb instance, starting a new one')
+      var ssb = Server({ appname: SSB_TOKENS_DIR })
 
-    // show connection updates when debugging
-    if (debug.enabled) { 
-      pull(
-        ssb.conn.peers(),
-        pull.asyncMap(function (peers, cb) {
-          if (peers.length === 0)
-            return cb(null, null)
+      // show connection updates when debugging
+      if (debug.enabled) { 
+        pull(
+          ssb.conn.peers(),
+          pull.asyncMap(function (peers, cb) {
+            if (peers.length === 0)
+              return cb(null, null)
 
-          pull(
-            pull.values(peers),
-            pull.asyncMap(function (p, cb) {
-              var logId = p[1].key
-              var state = p[1].state
-              ssb.about.socialValue(
-                { key: 'name', dest: p[1].key},
-                function (err, name) { 
-                  if (err) return cb(err)
-                  return cb(null, 'remote @' + ( name || logId) + ' ' + state + 
-                                  ' on ' + (p[1].type || p[1].inferredType)  + ' at ' +
-                                  p[0])
-                })
-            }),
-            pull.collect(function (err, peersStatus) {
-              if (err) return cb(err)
-              return cb(null, peersStatus.join('\n')) 
-            })
-          )
-        }),
-        pull.filter((s) => s !== null),
-        pull.drain(debug)
-      )
+            pull(
+              pull.values(peers),
+              pull.asyncMap(function (p, cb) {
+                var logId = p[1].key
+                var state = p[1].state
+                ssb.about.socialValue(
+                  { key: 'name', dest: p[1].key},
+                  function (err, name) { 
+                    if (err) return cb(err)
+                    return cb(null, 'remote @' + ( name || logId) + ' ' + state + 
+                                    ' on ' + (p[1].type || p[1].inferredType)  + ' at ' +
+                                    p[0])
+                  })
+              }),
+              pull.collect(function (err, peersStatus) {
+                if (err) return cb(err)
+                return cb(null, peersStatus.join('\n')) 
+              })
+            )
+          }),
+          pull.filter((s) => s !== null),
+          pull.drain(debug)
+        )
+      }
+    } else {
+      debug('connected to an existing running ssb instance with ssb-client')
     }
-  } else {
-    debug('connected to an existing running ssb instance with ssb-client')
-  }
 
-  function close () {
-    // Leave time for finishing setup before closing,
-    // otherwise ssb-connection-scheduler tries closing
-    // ConnDB twice
-    setTimeout(function () { ssb.close() }, 250)
-  }
+    function close () {
+      // Leave time for finishing setup before closing,
+      // otherwise ssb-connection-scheduler tries closing
+      // ConnDB twice
+      if (ssb && ssb.close)
+        setTimeout(function () { ssb.close() }, 250)
+    }
 
-  if (!ssb.tokens) {
-    console.error("ssb-tokens not installed on running server instance")
-    return close()
-  }
+    if (command !== 'init' && !ssb.tokens) {
+      console.error("ssb-tokens not installed on running server instance")
+      return close()
+    }
 
-  var supported = {
-    ancestors: true,
-    balance: true,
-    burn: true,
-    create: true,
-    give: true,
-    identities: true,
-    init: true,
-    operations: true,
-    show: true,
-    types: true,
-    unspent: true,
-    valid: true
-  }
+    var supported = {
+      ancestors: true,
+      balance: true,
+      burn: true,
+      create: true,
+      give: true,
+      identities: true,
+      init: true,
+      operations: true,
+      show: true,
+      types: true,
+      unspent: true,
+      valid: true
+    }
 
-  var cmd = args._[2] 
-  if (args._.length >= 2 && !supported[cmd]) {
-    console.error("ssb-tokens: invalid command '" + args._[2] + "'")
-    close()
-  } else {
-    try {
-      require('./' + cmd)(ssb, args, function (err) {
-        if (err) 
-          console.error(err.message)
-
-        close()
-      })
-    } catch (err) {
-      console.error(err)
+    if (args._.length >= 2 && !supported[command]) {
+      console.error("ssb-tokens: invalid command '" + command + "'")
       close()
-    }
-  } 
-})
+    } else {
+      try {
+        require('./' + command)(ssb, args, function (err) {
+          if (err) 
+            console.error(err.message)
+
+          close()
+        })
+      } catch (err) {
+        console.error(err)
+        close()
+      }
+    } 
+  })
+}
