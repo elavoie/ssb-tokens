@@ -1,6 +1,6 @@
 # Roadmap
 
-## 1. Create, Give, Burn, List, Trace, and Flag tokens
+## 1. Create, Give, Burn tokens
 
     [x] Libraries
     [x] - Add missing syntactic validation to burn
@@ -47,12 +47,24 @@
            [x] Simplify after having moved some operations to unspent
        [x] Validate (operation)
        [x] Unfollow (identities operation)
-       [ ] Streamline initial bootstrap and interop
+       [x] Streamline initial bootstrap and interop
            [x] Add 'init' command that initializes '~/.ssb-tokens' when missing
            [x] Require 'init' prior to running all other commands
-           [ ] Enable ssbClient to use a different default path than '~/.APPNAME'
-           [ ] identities create: should also give full permissions to all created ids to enable replication
            [x] Use a different local ssb-db for alpha release ('~/.ssb-tokens')
+       [ ] Add automatic matching of token-types from token name for 'give'
+    [ ] Update Documentation
+        [ ] README
+            [ ] Update with complete instruction for installation and bootstrap
+            [ ] Clean-up unused commands
+            [ ] Manually check all README example applications
+            [ ] Add link to API documentation
+        [ ] API
+            [ ] Second pass for clean up and consistency 
+    [ ] Paper
+       [ ] Implement simulator of ERC20 transactions 
+       [ ] Measure performance
+       [ ] Optimize to run in reasonable time on Raspberry Pi 4
+       [ ] Update SSB-Tokens paper and submit to Middleware 2023
 
 # 3. Improvements towards 1.0
     [ ] Support for more use cases
@@ -66,9 +78,18 @@
 
     [ ] Convenience
         [ ] API + CLI: Enable listing token types per receiver and per participant
+            [ ] give: match tokens types only against those owned by identities for which
+                      we have the private keys
         [ ] CLI: Enable listing the balances of all tokens held by a given participant
         [ ] CLI (balance --live): Add live updates of balances upon new received operations
         [ ] CLI: Enable listing of all unspent amounts for each token and associated operations
+
+    [ ] Personalization
+        [ ] CLI: Enable ssbClient to use a different default path than '~/.APPNAME'
+
+    [ ] Replication
+        [ ] Deploy a room server for synchronization 
+        [ ] identities create: should also give full permissions to all created ids to enable replication
 
     [ ] Make token type easier to specify 
         [ ] Add aliasing of token types ("tokenType:XXX", "tt:XXX")
@@ -89,10 +110,14 @@
     [ ] Add automatic checks for updates to command-line interface,
         using an SSB Log for notification
 
-    [ ] Deploy a room server for synchronization 
-
     [ ] Add persistence of valid and invalid sets
 
+    [ ] Link ssb-tokens identities to social identities and replicate transactions from friends
+
+## 4. Improvements towards 2.0
+ 
+    [ ] Replicate identities based on history of transactions, i.e. replicate identities that
+        transacted with ours
 
 ## 2. Example Applications (CLI versions)
 
