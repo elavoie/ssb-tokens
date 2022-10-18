@@ -1,6 +1,9 @@
 usage: ssb-tokens <command> [<args>]
 
 COMMANDS:
+    init        initialize local database
+
+  operations:
     burn        destroy tokens
     create      mint new tokens
     give        transfer tokens

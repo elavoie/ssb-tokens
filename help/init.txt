@@ -1,0 +1,9 @@
+usage: ssb-tokens init [<db-path>]
+
+Initialize local database.
+
+<db-path> is the path to the local database, which defaults to
+'$HOMEDIR/.ssb-tokens'. 
+
+See 'ssb-tokens help ssb' for an explanation of the Secure-Scuttlebutt 
+concepts (ex: SSB_MSG_ID) used.

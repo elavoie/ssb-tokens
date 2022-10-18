@@ -46,10 +46,11 @@
        [x] Balance (token type, identity)
            [x] Simplify after having moved some operations to unspent
        [x] Validate (operation)
-       [ ] Block (identities operation)
+       [x] Unfollow (identities operation)
        [ ] Streamline initial bootstrap and interop
-           [ ] Add 'init' command that initializes '~/.ssb-tokens' when missing
-           [ ] Require 'init' prior to running all other commands
+           [x] Add 'init' command that initializes '~/.ssb-tokens' when missing
+           [x] Require 'init' prior to running all other commands
+           [ ] Enable ssbClient to use a different default path than '~/.APPNAME'
            [ ] identities create: should also give full permissions to all created ids to enable replication
            [x] Use a different local ssb-db for alpha release ('~/.ssb-tokens')
 

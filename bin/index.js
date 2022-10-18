@@ -9,6 +9,7 @@ var createPeerStream = require('dgram-broadcast')
 var multiaddress = require('multiserver-address')
 var pull = require('pull-stream')
 var Server = require('../src/server.js')
+var home = require('os-homedir')
 
 
 function help () {
@@ -38,12 +39,24 @@ var SSB_TOKENS_DIR = args['dir'] || 'ssb-tokens'
 
 debug('using local database and config in ~/.' + SSB_TOKENS_DIR)
 
+var ssbTokensPath = path.join(home(), '.' + SSB_TOKENS_DIR)
+if (!fs.existsSync(ssbTokensPath) && command !== 'init') {
+  console.error('Invalid or inexisting local database at path ' + ssbTokensPath + '.') 
+  console.error("You can initialize a new one with 'ssb-tokens init'.")
+  process.exit(1)
+}
+
 ssbClient(null, SSB_TOKENS_DIR, function (err, ssb, config) {
   if (err) {
     if (err.message !== "could not connect to sbot") {
       console.error(err)
       return process.exit(1)
     }
+
+    if (command === 'init') {
+      debug('skip starting an ssb-server with init command')
+      return 
+    } 
 
     debug('could not connect to a running ssb instance, starting a new one')
     var ssb = Server({ appname: SSB_TOKENS_DIR })
@@ -103,6 +116,7 @@ ssbClient(null, SSB_TOKENS_DIR, function (err, ssb, config) {
     create: true,
     give: true,
     identities: true,
+    init: true,
     operations: true,
     show: true,
     types: true,

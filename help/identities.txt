@@ -6,5 +6,6 @@ COMMANDS:
     create      create a new identity
     follow      replicate another identity's messages 
     list        list identities
+    unfollow    stop replicating another identity's messages
 
 See 'ssb-tokens identities <command> --help' for help about a specific command.
