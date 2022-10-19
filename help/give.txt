@@ -6,8 +6,9 @@ Transfer <number> <tokens> to <receiver>.
     point value. It should be equal or less than the number of <tokens> 
     available. 
 
-<tokens> can be a source operation (SSB_MSG_ID) or a token type (String).
-    All <tokens> should have the same token type.
+<tokens> can be a source operation (SSB_MSG_ID), a token type (String),
+    or the name property (String) of a token type.  All <tokens> should have
+    the same token type.
  
 <receiver> is the alias or the SSB_ID of the receiver.
 
@@ -15,6 +16,7 @@ Examples:
 
     ssb-tokens give 6 "%AFda..." "@YMaf..."
     ssb-tokens give 1 7e013198c04ddb4a @alice --author @bob
+    ssb-tokens give 1 Point @bob
     ssb-tokens give 1 $(ssb-tokens types --nm Point --au @alice -s -t) @bob
 
 If <tokens> is a token type, multiple sources may be used

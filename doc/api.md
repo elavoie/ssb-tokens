@@ -608,6 +608,7 @@ Options can be the following:
         description: SSB_MSG_ID,   // Default: undefined (match any)
         name: String,              // Default: undefined (match any) 
         unit: String,              // Default: undefined (match any)
+        tokenType: String          // Default: undefined (match any)
     },
     validate: Boolean              // Default: true      
 }

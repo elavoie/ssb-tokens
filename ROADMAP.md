@@ -51,7 +51,7 @@
            [x] Add 'init' command that initializes '~/.ssb-tokens' when missing
            [x] Require 'init' prior to running all other commands
            [x] Use a different local ssb-db for alpha release ('~/.ssb-tokens')
-       [ ] Add automatic matching of token-types from token name for 'give'
+       [x] Add automatic matching of token-types from token name for 'give'
     [ ] Update Documentation
         [ ] README
             [ ] Update with complete instruction for installation and bootstrap

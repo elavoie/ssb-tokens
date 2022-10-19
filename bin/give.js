@@ -28,13 +28,39 @@ module.exports = function give (ssb, args, cb) {
   pull(
     pull.values(sources),
     pull.asyncMap((s, cb) => {
-      if (ref.isMsgId(s.token))
+      if (ref.isMsgId(s.token)) {
         s.id = s.token
-      else
-        s.tokenType = s.token
-      return cb(null, s)
+        return cb(null, s)
+      } else {
+        ssb.tokens.types({ match: { tokenType: s.token } }, function (err, types) {
+          if (err) return cb(err)
+
+          var keys = Object.keys(types)
+          if (keys.length === 1) {
+            s.tokenType = keys[0]
+            return cb(null, s)
+          } else if (keys.length > 1) {
+            return cb(new Error("Internal error, should not match more than one token type"))
+          } else {
+            ssb.tokens.types({ match: { name: s.token } }, function (err, types) {
+              var keys = Object.keys(types)
+              if (keys.length === 1) {
+                s.tokenType = keys[0]
+                return cb(null, s)
+              } else if (keys.length > 1) {
+                return cb(new Error("Ambiguous name " + JSON.stringify(s.token) + 
+                                    ", matches more than one token type: " + keys))
+              } else {
+                return cb(new Error("No token type found for name " + s.token))
+              }
+            })
+          }
+        })
+      }
     }),
     pull.collect((err, sources) => {
+      if (err) return cb(err)
+
       var options = {
         author: args.author, 
         sources: sources,
