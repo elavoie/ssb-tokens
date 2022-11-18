@@ -1,3 +1,6 @@
+// Original version from https://github.com/ssbc/ssb-identities, under MIT license,
+// modified to make lookup of identities faster and enable retrieval of private 
+// keys locally through 'get' method (not exposed to ssb-client or RPC).
 var leftpad = require('left-pad')
 var path = require('path')
 var mkdirp = require('mkdirp')
