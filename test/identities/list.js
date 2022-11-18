@@ -48,8 +48,8 @@ module.exports = function (ssb) {
       ssb.tokens.identities.create({ alias: 'bob' }, function (err, bob) {
         t.error(err)
 
-        // Create an id that is not owned (not seen by ssb-identities) but
-        // participates in operations
+        // Create an id that is not owned (not seen by the
+        // require('../identities') module) but participates in operations
         var roger = ssbKeys.generate()
 
         ssb.tokens.create(1, { name: "Alice Token", author: alice.id }, function (err, msg) {

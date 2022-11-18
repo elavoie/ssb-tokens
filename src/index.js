@@ -1503,8 +1503,7 @@ function identities (ssb, api) {
                           ", expected a string"))
 
     if (!ssb.identities) {
-      return cb(new Error("Install ssb.identities " +
-                          "(https://github.com/ssbc/ssb-identities) " +
+      return cb(new Error("Install ssb-tokens/identities " +
                           "in ssb-server to create an identity."))
     }
       
@@ -1785,9 +1784,8 @@ function create (ssb, api)  {
       }
 
       if (!ssb.identities) {
-        return cb(new Error("Install ssb.identities " +
-                            "(https://github.com/ssbc/ssb-identities) " +
-                            "in ssb-server to specify another author."))
+      return cb(new Error("Install ssb-tokens/identities " +
+                          "in ssb-server to specify another author."))
       }
     }
     
@@ -1920,9 +1918,8 @@ function give (ssb,api)  {
                         ", expected SSB Log ID"))
 
       if (!ssb.identities)
-        return cb(new Error("Install ssb.identities " +
-                        "(https://github.com/ssbc/ssb-identities) " +
-                        " in ssb-server to specify another author."))
+        return cb(new Error("Install ssb-tokens/identities " +
+                            " in ssb-server to specify another author."))
     }
 
     ssb.whoami(function (err, author) {
@@ -2098,8 +2095,7 @@ function burn (ssb,api)  {
                         ", expected SSB Log ID"))
 
       if (!ssb.identities)
-        return cb(new Error("Install ssb.identities " +
-                        "(https://github.com/ssbc/ssb-identities) " +
+        return cb(new Error("Install ssb-tokens/identities " +
                         " in ssb-server to specify another author."))
     }
 

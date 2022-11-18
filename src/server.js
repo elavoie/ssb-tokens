@@ -39,7 +39,8 @@ module.exports = function (opts) {
   //.use(require('ssb-db'))       // already provided previously
   //.use(require('ssb-query'))    // already provided previously
   //.use(require('ssb-links'))    // already provided previously
-  .use(require('ssb-identities')) // Identity support
+  .use(require('../identities'))  // same as ssb-identities but allows recovering keys
+                                  // locally through get method
   .use(require('ssb-backlinks'))  // Dependency of ssb-about, depends on ssb-links
   .use(require('ssb-about'))      // Resolving aliases as about messages
   .use(require('../'))            // ssb-tokens

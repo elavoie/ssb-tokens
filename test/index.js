@@ -4,7 +4,7 @@ var keys = require('ssb-keys')
 var meta = require('../')
 var util = require('util')
 
-Server.use(require('ssb-identities'))
+Server.use(require('../identities'))
 Server.use(require('ssb-query'))
 Server.use(require('ssb-backlinks'))
 Server.use(require('ssb-about'))
