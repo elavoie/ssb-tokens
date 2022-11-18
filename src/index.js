@@ -11,8 +11,7 @@ var ssbKeys = require('ssb-keys')
 var util = require('./util')
 
 var log = debug('ssb-tokens')
-var ALLOWEDCHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 _-"
-' !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~'
+var ALLOWEDCHARS = ' !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~'
 var TOKENTYPELENGTH = 16
 var NAMELENGTH = 30
 var UNITLENGTH = 10
@@ -188,8 +187,8 @@ function formatCreate (op) {
                      ", should be positive"))
 
   for (var i = 0; i < op.name.length; ++i) {
-    var c = op.name[i].charCodeAt(i)
-    if (c < 32 && c > 126 ) {
+    var c = op.name.charCodeAt(i)
+    if (c < 32 || c > 126 ) {
       return causes('name', 
                new Error("Invalid character '" + op.name[i] + "' in name " +
                        " for operation " + JSON.stringify(op) + 
@@ -199,8 +198,8 @@ function formatCreate (op) {
   }
 
   for (var i = 0; i < op.unit.length; ++i) {
-    var c = op.unit[i].charCodeAt(i)
-    if (c < 32 && c > 126 ) {
+    var c = op.unit.charCodeAt(i)
+    if (c < 32 || c > 126 ) {
       return causes('unit',
                new Error("Invalid character '" + op.unit[i] + "' in unit," +
                        " for operation " + JSON.stringify(op) + 
@@ -1906,6 +1905,13 @@ function give (ssb,api)  {
       return cb(new Error("Invalid options " + JSON.stringify(options) +
                       ", expected an object"))
 
+    if (typeof options.publish === 'undefined')
+      options.publish = true
+
+    if (typeof options.publish !== 'boolean')
+      return cb(new Error("Invalid options.publish " + JSON.stringify(options.publish) +
+                          ", expected a boolean value"))
+
     options.author = options.author || null
     if (options.author) {
       if (!ref.isFeed(options.author))
@@ -2022,7 +2028,9 @@ function give (ssb,api)  {
                                           JSON.stringify(msgValue, null, 2) + 
                                          ": \n" + err.message))
 
-            if (!options.author) {
+            if (!options.publish) {
+              return cb(null, msgValue)
+            } else if (!options.author) {
               ssb.publish(msgValue.content, cb)
             } else {
               ssb.identities.publishAs({ 

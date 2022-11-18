@@ -251,7 +251,7 @@ module.exports = function run (ssb) {
     var createOp = {
       type: "tokens/" + meta["api-version"] + "/create",
       amount: 10,
-      name: "Create Coin &",
+      name: "Create Coin " + String.fromCharCode(141)[0],
       unit: "CRC",
       decimals: 0,
       description: null
@@ -267,7 +267,7 @@ module.exports = function run (ssb) {
       type: "tokens/" + meta["api-version"] + "/create",
       amount: 10,
       name: "Create Coin",
-      unit: "CRC&",
+      unit: "CRC" + String.fromCharCode(141)[0],
       decimals: 0,
       description: null
     }
