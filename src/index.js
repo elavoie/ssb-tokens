@@ -11,8 +11,8 @@ var ssbKeys = require('ssb-keys')
 var util = require('./util')
 
 var log = debug('ssb-tokens')
-var ALLOWEDCHARS =
-"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 _-"
+var ALLOWEDCHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 _-"
+' !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~'
 var TOKENTYPELENGTH = 16
 var NAMELENGTH = 30
 var UNITLENGTH = 10
@@ -188,23 +188,25 @@ function formatCreate (op) {
                      ", should be positive"))
 
   for (var i = 0; i < op.name.length; ++i) {
-    var c = op.name[i]
-    if (ALLOWEDCHARS.indexOf(c) < 0)
+    var c = op.name[i].charCodeAt(i)
+    if (c < 32 && c > 126 ) {
       return causes('name', 
-               new Error("Invalid character '" + c + "' in name " +
+               new Error("Invalid character '" + op.name[i] + "' in name " +
                        " for operation " + JSON.stringify(op) + 
                        ", expected only characters within '" + 
                        ALLOWEDCHARS + "'"))
+    }
   }
 
   for (var i = 0; i < op.unit.length; ++i) {
-    var c = op.unit[i]
-    if (ALLOWEDCHARS.indexOf(c) < 0)
+    var c = op.unit[i].charCodeAt(i)
+    if (c < 32 && c > 126 ) {
       return causes('unit',
-               new Error("Invalid character '" + c + "' in unit," +
+               new Error("Invalid character '" + op.unit[i] + "' in unit," +
                        " for operation " + JSON.stringify(op) + 
                        ", expected only characters within '" + 
                        ALLOWEDCHARS + "'"))
+     }
   }
 
   var shifted = Math.pow(10,op.decimals)*op.amount
