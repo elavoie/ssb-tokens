@@ -67,7 +67,10 @@ exports.init = function (sbot, config) {
         cb(err, newKeys.id)
       })
     },
-    get: function (id) { return keysMap[id] }, // Not exposed through RPC
+    get: function (id) { 
+      if (sbot.id === id) return sbot.keys
+      else return keysMap[id] 
+    }, // Not exposed through RPC
     publishAs: function (opts, cb) {
       var id = opts.id
       if(locks[id]) return cb(new Error('already writing'))
