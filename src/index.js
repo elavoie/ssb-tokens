@@ -2278,6 +2278,7 @@ var meta = {
     },
     operations: 'source',
     owner: 'async',
+    tokenType: 'sync',
     types: 'async',
     valid: 'async',
     validate: {
