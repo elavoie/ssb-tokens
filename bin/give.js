@@ -64,7 +64,8 @@ module.exports = function give (ssb, args, cb) {
       var options = {
         author: args.author, 
         sources: sources,
-        receiver: receiver
+        receiver: receiver,
+        publish: typeof args.publish === "boolean" ? args.publish : true
       }
 
       var binUtil = require('./util')(ssb)
@@ -83,7 +84,7 @@ module.exports = function give (ssb, args, cb) {
             if (args['only-id']) {
               console.log(msg.key)
               return cb(null)
-            } else if (args.json) {
+            } else if (args.json || !options.publish) {
               console.log(JSON.stringify(msg, null, 2))
               return cb(null)
             } else {

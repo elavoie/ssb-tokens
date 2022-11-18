@@ -12,7 +12,8 @@ module.exports = function give (ssb, args, cb) {
 
   var options = {
     author: args.author,
-    description: args.description
+    description: args.description,
+    publish: typeof args.publish === "boolean" ? args.publish : true
   }
 
   var params = args._.slice(3)
@@ -30,7 +31,7 @@ module.exports = function give (ssb, args, cb) {
       if (args['only-id']) {
         console.log(msg.key)
         return cb(null)
-      } else if (args.json) {
+      } else if (args.json || !options.publish) {
         console.log(JSON.stringify(msg, null, 2))
         return cb(null)
       } else {

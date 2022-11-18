@@ -30,19 +30,20 @@ combination of <name> and <options> (including author) of the token.
     --decimals=DEC (true, DEC=0, Number)
         The tokens can be given in units with no more than DEC decimals.
         (included in token type)
-    
+
+    --json (false, false, Boolean)
+        Output the message in JSON format if successful.
+
+    --no-publish (false, false, Boolean)
+        Create message but do not publish in the underlying database.
+
+    --only-id (false, false, Boolean)
+        Output only the SSB Msg ID if successful, without a humane description.
 
     --unit=UNIT (true, UNIT='', String)
         The unit in which the tokens are denominated. Using a non-empty UNIT
         enables aggregation of different tokens denominated in the same unit.
         (included in token type)
-
-    --only-id (false, false, Boolean)
-        Output only the SSB Msg ID if successful, without a humane description.
-
-    --json (false, false, Boolean)
-        Output the published message in JSON format if successful.
-
 
 See 'ssb-tokens help ssb' for an explanation of the Secure-Scuttlebutt 
 concepts (ex: SSB_MSG_ID) used.

@@ -296,4 +296,23 @@ module.exports = function run (ssb) {
     t.end()
     }) })
   })
+
+  tape('give: correct without publishing', function (t) {
+    ssb.tokens.create(2, 'GiveWOAmntWTokType', function (err, createMsg) {
+    t.error(err)
+
+    ssb.identities.create(function (err, id) {
+    t.error(err)
+
+    ssb.tokens.give({ 
+      tokenType: createMsg.value.content.tokenType
+    }, id, { publish: false }, function (err, giveMsg) {
+      t.error(err)
+
+      ssb.get(giveMsg.key, function (err) {
+        t.true(err)
+        t.end()
+      })
+    }) }) })
+  })
 }

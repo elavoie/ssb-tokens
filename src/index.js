@@ -8,6 +8,7 @@ var crypto = require('crypto')
 var debug = require('debug')
 var ref = require('ssb-ref')
 var ssbKeys = require('ssb-keys')
+var validate = require('ssb-validate')
 var util = require('./util')
 
 var log = debug('ssb-tokens')
@@ -96,6 +97,34 @@ function causes (reasons, err) {
   else 
     reasons.forEach((r) => err[r] = true)
   return err
+}
+
+function createMsg (ssb, author, msgValue, cb) {
+  ssb.getFeedState(author, function (err, feedState) {
+    if (err) return cb(err)
+
+    feedState.queue = []
+    var state = validate.initial()
+    state.feeds[author] = feedState
+
+    try {
+      msgValue = validate.create(
+        feedState,
+        ssb.identities.get(author),
+        null,
+        msgValue,
+        Date.now()
+      )
+
+      state = validate.append(state, null, msgValue)
+      var msg = state.queue[state.queue.length-1]
+      msg.unpublished = true
+      return cb(null, msg)
+    } catch (err) {
+      console.error(err)
+      return cb(err)
+    }
+  })
 }
 
 // **************************** formatOp (op) ***************************
@@ -1788,6 +1817,13 @@ function create (ssb, api)  {
                           "in ssb-server to specify another author."))
       }
     }
+
+    if (typeof options.publish === 'undefined')
+      options.publish = true
+
+    if (typeof options.publish !== 'boolean')
+      return cb(new Error("Invalid options.publish " + JSON.stringify(options.publish) +
+                          ", expected a boolean value"))
     
     // Get author log id
     ssb.whoami(function (err, log) {
@@ -1819,7 +1855,9 @@ function create (ssb, api)  {
           cb(null, msg)
         }
 
-        if (!(options.author) && author == log.id) {
+        if (!options.publish) {
+          createMsg(ssb, author, createOp, done)
+        } else if (!(options.author) && author === log.id) {
           ssb.publish(createOp, done)
         } else {
           ssb.identities.publishAs({ 
@@ -1922,11 +1960,11 @@ function give (ssb,api)  {
                             " in ssb-server to specify another author."))
     }
 
-    ssb.whoami(function (err, author) {
+    ssb.whoami(function (err, log) {
       if (err) return cb(new Error("Error retrieving default author: \n" + 
                                    err.message))
 
-      author = options.author || author.id
+      author = options.author || log.id
 
       pull(
         pull.values(sources),
@@ -2026,8 +2064,8 @@ function give (ssb,api)  {
                                          ": \n" + err.message))
 
             if (!options.publish) {
-              return cb(null, msgValue)
-            } else if (!options.author) {
+              createMsg(ssb, author, msgValue.content, cb)
+            } else if (!(options.author) && author === log.id) {
               ssb.publish(msgValue.content, cb)
             } else {
               ssb.identities.publishAs({ 
@@ -2087,6 +2125,13 @@ function burn (ssb,api)  {
       return cb(new Error("Invalid options " + JSON.stringify(options) +
                       ", expected an object"))
 
+    if (typeof options.publish === 'undefined')
+      options.publish = true
+
+    if (typeof options.publish !== 'boolean')
+      return cb(new Error("Invalid options.publish " + JSON.stringify(options.publish) +
+                          ", expected a boolean value"))
+
     options.author = options.author || null
     if (options.author) {
       if (!ref.isFeed(options.author))
@@ -2099,11 +2144,11 @@ function burn (ssb,api)  {
                         " in ssb-server to specify another author."))
     }
 
-    ssb.whoami(function (err, author) {
+    ssb.whoami(function (err, log) {
       if (err) return cb(new Error("Error retrieving default author: \n" + 
                                    err.message))
 
-      author = options.author || author.id
+      author = options.author || log.id
 
       pull(
         pull.values(sources),
@@ -2157,7 +2202,9 @@ function burn (ssb,api)  {
                                           JSON.stringify(msgValue, null, 2) + 
                                          ": \n" + err.message))
 
-            if (!options.author) {
+            if (!options.publish) {
+              createMsg(ssb, author, msgValue.content, cb)
+            } else if (!(options.author) && author === log.id) {
               ssb.publish(msgValue.content, cb)
             } else {
               ssb.identities.publishAs({ 

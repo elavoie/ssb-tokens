@@ -136,7 +136,7 @@ of tokens spent in [give](#tokensgivetokens-receiver-options-cb) and
     var config = require('ssb-config')
 
     // add dependencies (if not already present)
-    Server.use(require('ssb-identities'))
+    Server.use(require('ssb-tokens/identities')) // to enable multiple identities
     Server.use(require('ssb-query'))
     // add ssb-tokens
     Server.use(require('ssb-tokens'))
@@ -177,7 +177,7 @@ operations.
 
 ### Optional Plugins `ssb-server`
 
-1. [ssb-identities](https://github.com/ssbc/ssb-identities) to use the `author`
+1. [ssb-tokens/identities](../identities) to use the `author`
    option, which can use a different identity than the default.
 
 ## Operations
@@ -195,9 +195,8 @@ running.
 Create `amount` (Number) of token with properties in `options`.
 
 The callback should have signature `cb(err, msg)`: `err` is `null` if the
-operation was successful or `Error` (truthy) otherwise, and `msg` is the
-message saved in the SSB Log ([SSB Message Format](#ssb-message-format)).
-
+operation was successful or `Error` (truthy) otherwise. `msg` is the 
+constructed [SSB Message](#ssb-message).
 
 Options can be the following:
 
@@ -208,6 +207,7 @@ Options can be the following:
     decimals: Number,                  // Default: 0
     description: SSB_MSG_ID || null,   // Default: null
     author: SSB_LOG_ID || null,        // Default: null
+    publish: Boolean                   // Default: true
 }
 ```
 
@@ -224,13 +224,19 @@ where:
   `null`, use the default log ID
   ([ssb-server](https://github.com/ssbc/ssb-server) uses `~/.ssb/secret` by
   default).
+* `publish`: is a boolean flag. If `true`, immediately publish the operation in
+  the underlying database. Otherwise, construct the message but does not
+  publish the message . As long as no other message from the same author has been
+  published in the meantime, the constructed message can be published later in
+  the log with `ssb.add` or `ssb.queue` (see [ssb-db](https://github.com/ssbc/ssb-db)).
 
 For convenience `options=name (String)` is automatically converted to 
 `options={ name: name }`, using all other values defaults.
 
 #### Log Effect(s)
 
-`author`'s log is extended with a [SSB Message](#ssb-message-format) with `content`:
+If `publish` is true and the operation is successful, `author`'s log is
+extended with the following operation:
 
 ```json
 {
@@ -278,15 +284,16 @@ if enough unspent tokens remain.
   should be one of the options above.
 
 The callback should have signature `cb(err, msg)`: `err` is `null` if the
-operation was successful or `Error` (truthy) otherwise, and `msg` is the
-message saved in the log.
+operation was successful or `Error` (truthy) otherwise. `msg` is the 
+constructed [SSB Message](#ssb-message).
 
 Options can be the following:
 
 ```js
 {
     author: SSB_LOG_ID || null,           // Default: null
-    description: SSB_MSG_ID || null       // Default: null
+    description: SSB_MSG_ID || null,      // Default: null
+    publish: Boolean                      // Default: true
 }
 ```
 
@@ -298,11 +305,16 @@ where:
 default).
 * `description`: is an optional [SSB Message ID](#ssb-message-id) whose content
    describes the reason for the transfer.
+* `publish`: is a boolean flag. If `true`, immediately publish the operation in
+  the underlying database. Otherwise, construct the message but does not
+  publish the message . As long as no other message from the same author has been
+  published in the meantime, the constructed message can be published later in
+  the log with `ssb.add` or `ssb.queue` (see [ssb-db](https://github.com/ssbc/ssb-db)).
 
 #### Log Effect(s)
 
-If the operation is successful, `author`'s log is extended with the following
-operation:
+If `publish` is true and the operation is successful, `author`'s log is
+extended with the following operation:
 
 ```json
 {
@@ -350,15 +362,16 @@ spent, even partially.
 
 - `[ operation-id, ... ]` (a list of [Operation ID](#operation-identifier))
 
-The callback should have signature `cb(err, msg)`.  `err` is `null` if the
-operation was successful or `Error` (truthy) otherwise. `msg` is an [SSB
-Message](#ssb-message).
+The callback should have signature `cb(err, msg)`: `err` is `null` if the
+operation was successful or `Error` (truthy) otherwise. `msg` is the 
+constructed [SSB Message](#ssb-message).
 
 Options can be the following:
 
 ```js
 {
     author: SSB_LOG_ID || null,          // Default: ".ssb/secret"
+    publish: Boolean                   // Default: true
 }
 ```
 
@@ -366,6 +379,11 @@ where:
 
 - `author`: is the [SSB ID](./help/ssb.txt) or 
    [SSB Keys](https://github.com/ssbc/ssb-keys) that is burning the tokens.
+* `publish`: is a boolean flag. If `true`, immediately publish the operation in
+  the underlying database. Otherwise, construct the message but does not
+  publish the message . As long as no other message from the same author has been
+  published in the meantime, the constructed message can be published later in
+  the log with `ssb.add` or `ssb.queue` (see [ssb-db](https://github.com/ssbc/ssb-db)).
 
 Note: To burn a partial amount from a source, first give the partial amount to
 yourself. To burn a partially spent source, first give to yourself the
@@ -373,7 +391,8 @@ remainder, then burn this last `give` operation.
 
 #### Log Effect(s)
 
-1. `author`'s log is extended with the following message:
+If `publish` is true and the operation is successful, `author`'s log is
+extended with the following operation:
 
 ```json
 {

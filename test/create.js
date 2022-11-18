@@ -118,4 +118,16 @@ module.exports = function run (ssb) {
         t.end()
       })
   })
+
+  tape('create: correct without publishing', function (t) {
+    ssb.tokens.create(1, { name: 'Shells', publish: false }, 
+      function (err, msg) {
+        t.false(err)
+
+        ssb.get(msg.key, function (err) {
+          t.true(err)
+          t.end()
+        })
+      })
+  })
 }

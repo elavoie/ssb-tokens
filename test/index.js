@@ -1,9 +1,10 @@
 var tape = require('tape')
-var Server = require('ssb-server')
 var keys = require('ssb-keys')
 var meta = require('../')
 var util = require('util')
 
+var Server = require('ssb-server')
+Server.use(require('ssb-db'))
 Server.use(require('../identities'))
 Server.use(require('ssb-query'))
 Server.use(require('ssb-backlinks'))

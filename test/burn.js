@@ -111,4 +111,18 @@ module.exports = function run (ssb) {
     t.end()
     })
   })
+
+  tape('burn: correct without publishing', function (t) {
+    ssb.tokens.create(1, 'burn with operation-id', function (err, createMsg) {
+    t.error(err)
+
+    ssb.tokens.burn(createMsg.key, { publish: false }, function (err, burnMsg) {
+    t.error(err)
+
+    ssb.get(burnMsg.key, function (err) {
+      t.true(err)
+      t.end()
+    })
+    }) })
+  })
 }

@@ -52,19 +52,34 @@
            [x] Require 'init' prior to running all other commands
            [x] Use a different local ssb-db for alpha release ('~/.ssb-tokens')
        [x] Add automatic matching of token-types from token name for 'give'
+    [ ] Paper
+       [ ] Update API to create operations without automatic publishing
+           on the database
+       [ ] Refactor to use decimal.js for arbitrary-precision operations 
+           (ERC20 tokens expect 256-bits uint for amounts while JavaScript uses doubles (max 52-bits uint)
+           [ ] Use a single global Decimal constructor with precision limited to 78 digits (just enough
+               to represent all uint256 numbers supported by ERC20)
+           [ ] Redefine valueOf to throw exception to prevent accidental usage of primitive operations
+           [ ] Modify type for `amount` to use string instead of Number, with maximum 78 characters
+           [ ] Modify serialization of create, give, and burn operations to use a string 
+           [ ] Modify API input validation for amounts to support strings and tests for 
+               loss of precision when using numbers
+           [ ] Modify queries to return amounts as Decimal object instead of Number
+           [ ] Modify unit tests to use new semantics for decimals
+           [ ] Modify doc/api.md and help/* to reflect new semantics for decimals
+       [ ] Implement simulator of ERC20 transactions (see experiments roadmap)
+       [ ] Measure performance
+       [ ] Optimize to run in reasonable time on Raspberry Pi 4
+       [ ] Update SSB-Tokens paper and submit to Middleware 2023
     [ ] Update Documentation
         [ ] README
             [ ] Update with complete instruction for installation and bootstrap
             [ ] Clean-up unused commands
             [ ] Manually check all README example applications
             [ ] Add link to API documentation
+            [ ] Write guide on how to implement equivalents to ERC20 smart-contracts on ssb-tokens
         [ ] API
             [ ] Second pass for clean up and consistency 
-    [ ] Paper
-       [ ] Implement simulator of ERC20 transactions 
-       [ ] Measure performance
-       [ ] Optimize to run in reasonable time on Raspberry Pi 4
-       [ ] Update SSB-Tokens paper and submit to Middleware 2023
 
 # 3. Improvements towards 1.0
     [ ] Support for more use cases

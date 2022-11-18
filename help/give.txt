@@ -34,11 +34,14 @@ order of reception, from oldest to newest.
         SSB Message ID. The description message can be created by any
         author (i.e. it can be someone else than you).
 
+    --json (false, false, Boolean)
+        Output the message in JSON format if successful.
+
+    --no-publish (false, false, Boolean)
+        Create message but do not publish in the underlying database.
+
     --only-id (false, false, Boolean)
         Output only the SSB Msg ID if successful, without a humane description.
-
-    --json (false, false, Boolean)
-        Output the published message in JSON format if successful.
 
 See 'ssb-tokens help ssb' for an explanation of the Secure-Scuttlebutt 
 concepts (ex: SSB_MSG_ID) used.

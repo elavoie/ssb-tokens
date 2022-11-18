@@ -13,7 +13,8 @@ module.exports = function create (ssb, args, cb) {
     description: args.description,
     decimals: args.decimals,
     name: args._[4],
-    unit: args.unit
+    unit: args.unit,
+    publish: typeof args.publish === "boolean" ? args.publish : true
   }
 
   var binUtil = require('./util')(ssb)
@@ -28,7 +29,7 @@ module.exports = function create (ssb, args, cb) {
       if (args['only-id']) {
         console.log(msg.key)
         return cb(null)
-      } else if (args.json) {
+      } else if (args.json || !options.publish) {
         console.log(JSON.stringify(msg, null, 2))
         return cb(null)
       } else {
