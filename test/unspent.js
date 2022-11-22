@@ -16,7 +16,7 @@ module.exports = function run (ssb) {
     ssb.tokens.unspent(msg.key, msg.value.author, function (err, unspent) {
     t.error(err)
 
-    t.equal(unspent, 10)
+    t.equal(unspent.toString(), "10")
     t.end()
     }) })
   })
@@ -36,7 +36,7 @@ module.exports = function run (ssb) {
     createMsg.value.author, function (err, unspent) {
     t.error(err)
 
-    t.equal(unspent, 9)
+    t.equal(unspent.toString(), "9")
     t.end()
     }) }) }) })
   })
@@ -67,7 +67,7 @@ module.exports = function run (ssb) {
     createMsg.value.author, function (err, unspent) {
     t.error(err)
 
-    t.equal(unspent, 0)
+    t.equal(unspent.toString(), "0")
     t.end()
     }) }) }) }) }) })
   })
@@ -87,7 +87,7 @@ module.exports = function run (ssb) {
     ssb.tokens.unspent(giveMsg.key, rec, function (err, unspent) {
     t.error(err)
 
-    t.equal(unspent, 1)
+    t.equal(unspent.toString(), "1")
     t.end()
     }) }) }) })
   })
@@ -113,7 +113,7 @@ module.exports = function run (ssb) {
     ssb.tokens.unspent(giveMsg.key, rec, function (err, unspent) {
     t.error(err)
 
-    t.equal(unspent, 0)
+    t.equal(unspent.toString(), "0")
     t.end()
     }) }) }) }) })
   })
@@ -152,7 +152,7 @@ module.exports = function run (ssb) {
     rec, function (err, unspent) {
     t.error(err)
 
-    t.equal(unspent, 0)
+    t.equal(unspent.toString(), "0")
     t.end()
     }) }) }) }) }) }) }) 
   })
@@ -265,7 +265,6 @@ module.exports = function run (ssb) {
         amount: 1,
         name: 'Shells',
         unit: '',
-        decimals: 0,
         description: null,
         tokenType: 'invalidtype'
       }

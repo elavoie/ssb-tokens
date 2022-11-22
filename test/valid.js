@@ -61,7 +61,6 @@ module.exports = function run (ssb) {
         amount: -1, // Invalid negative amount
         name: "Shells",
         unit: "",
-        decimals: 0,
         description: null
       }
       invalidOp.tokenType = ssb.tokens.tokenType(author, invalidOp)

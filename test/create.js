@@ -1,5 +1,6 @@
 var tape = require('tape')
 var meta = require('../')
+var Decimal = require('decimal.js')
 
 module.exports = function run (ssb) {
   tape('create: no callback', function (t) {
@@ -13,9 +14,92 @@ module.exports = function run (ssb) {
     }
   })
 
-  tape('create: invalid token amount', function (t) {
+  tape('create: valid string token amount', function (t) {
     ssb.tokens.create('10', 'Shells', function (err, msg) {
+      t.false(err)
+      t.equal(msg.value.content.amount, "10")
+      t.end()
+    })
+  })
+
+  tape('create: valid number token amount', function (t) {
+    ssb.tokens.create(10, 'Shells', function (err, msg) {
+      t.false(err)
+      t.equal(msg.value.content.amount, "10")
+      t.end()
+    })
+  })
+  
+  tape('create: valid floating-point token amount', function (t) {
+    ssb.tokens.create(10.1, 'Shells', function (err, msg) {
+      t.false(err)
+      t.equal(msg.value.content.amount, "10.1")
+      t.end()
+    })
+  })
+
+  tape('create: valid Decimal token amount', function (t) {
+    ssb.tokens.create(Decimal(10), 'Shells', function (err, msg) {
+      t.false(err)
+      t.equal(msg.value.content.amount, "10")
+      t.end()
+    })
+  })
+
+  tape('create: valid Decimal floating-point amount', function (t) {
+    ssb.tokens.create(Decimal(10.001), 'Shells', 
+      function (err, msg) {
+        t.false(err)
+        t.equal(msg.value.content.amount, "10.001")
+        t.end()
+      })
+  })
+
+  tape('create: valid Decimal 78 significant digits', function (t) {
+    var amount = Decimal('1.' + '0'.repeat(76) + '1')
+    ssb.tokens.create(amount, 'Shells', 
+      function (err, msg) {
+        t.false(err)
+        t.equal(msg.value.content.amount, amount.toString())
+        t.end()
+      })
+  })
+
+  tape('create: valid string 78 significant digits', function (t) {
+    var amount = '1.' + '0'.repeat(76) + '1'
+    ssb.tokens.create(amount, 'Shells', 
+      function (err, msg) {
+        t.false(err)
+        t.equal(msg.value.content.amount, amount)
+        t.end()
+      })
+  })
+
+  tape('create: invalid Decimal 79 significant digits (max 78)', function (t) {
+    var amount = Decimal('1.' + '0'.repeat(77) + '1')
+    ssb.tokens.create(amount, 'Shells', 
+      function (err, msg) {
+        t.true(err)
+        t.true(err.amount)
+        t.end()
+      })
+  })
+
+  tape('create: invalid 79 significant digits string (max 78)', function (t) {
+    var amount = '1.' + '0'.repeat(77) + '1'
+    ssb.tokens.create(amount, 'Shells', 
+      function (err, msg) {
+        t.true(err)
+        t.true(err.amount)
+        t.end()
+      })
+  })
+
+
+  tape('create: invalid negative number token amount', function (t) {
+    ssb.tokens.create(-10, 'Shells', function (err, msg) {
       t.true(err)
+      t.true(err.amount)
       t.end()
     })
   })
@@ -43,11 +127,10 @@ module.exports = function run (ssb) {
       var author = msg.value.author
       var op = msg.value.content
       t.equal(op.type, 'tokens/' + meta['api-version'] + '/create')
-      t.equal(op.amount, 10)
+      t.equal(op.amount, '10')
       t.equal(op.name, 'Shells')
       t.equal(op.unit, '')
       t.equal(op.description, null)
-      t.equal(op.decimals, 0)
       t.equal(op.tokenType, ssb.tokens.tokenType(author, op))
       t.end()
     })
@@ -66,10 +149,9 @@ module.exports = function run (ssb) {
         var op = msg.value.content
         t.equal(author, newLogId)
         t.equal(op.type, 'tokens/' + meta['api-version'] + '/create')
-        t.equal(op.amount, 10)
+        t.equal(op.amount, '10')
         t.equal(op.name, 'Shells')
         t.equal(op.unit, '')
-        t.equal(op.decimals, 0)
         t.equal(op.description, null)
         t.equal(op.tokenType, ssb.tokens.tokenType(newLogId, op))
         t.end()
@@ -93,10 +175,9 @@ module.exports = function run (ssb) {
 
           var op = msg.value.content
           t.equal(op.type, 'tokens/' + meta['api-version'] + '/create')
-          t.equal(op.amount, 10)
+          t.equal(op.amount, '10')
           t.equal(op.name, 'Shells')
           t.equal(op.unit, '')
-          t.equal(op.decimals, 0)
           t.equal(op.description, descMsg.key)
           t.end()
         })
@@ -105,14 +186,6 @@ module.exports = function run (ssb) {
 
   tape('create: use an invalid description', function (t) {
     ssb.tokens.create(10, { name: 'Shells', description: '%malformed_id'}, 
-      function (err, msg) {
-        t.true(err)
-        t.end()
-      })
-  })
-
-  tape('create: use an invalid amount/decimals combination', function (t) {
-    ssb.tokens.create(10.001, { name: 'Shells', decimals: 1 }, 
       function (err, msg) {
         t.true(err)
         t.end()

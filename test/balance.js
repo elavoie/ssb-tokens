@@ -20,9 +20,10 @@ module.exports = function run (ssb) {
 
     t.equal(balance.owner, creator)
     t.equal(balance.tokenType, msg.value.content.tokenType)
-    t.equal(balance.amount, 10)
-    t.equal(balance.all[balance.created[0]].value.content.amount, 10)
-    t.equal(balance.unspent[balance.created[0]].amount, 10)
+    t.equal(balance.amount.toString(), "10")
+    t.equal(balance.all[balance.created[0]].value
+                                .content.amount.toString(), "10")
+    t.equal(balance.unspent[balance.created[0]].amount.toString(),"10")
     t.end()
     }) }) })
   })
@@ -48,22 +49,26 @@ module.exports = function run (ssb) {
 
     t.ok(balance)
     t.equal(balance.owner, creator)
-    t.equal(balance.amount, 9)    
+    t.equal(balance.amount.toString(), "9")    
     t.equal(balance.created.length, 1)    
-    t.equal(balance.all[balance.created[0]].value.content.amount, 10)    
-    t.equal(balance.unspent[balance.created[0]].amount, 9)    
+    t.equal(balance.all[balance.created[0]].value
+                               .content.amount.toString(), "10")    
+    t.equal(balance.unspent[balance.created[0]]
+                                   .amount.toString(), "9")    
     t.equal(balance.given.length, 1)
-    t.equal(balance.all[balance.given[0]].value.content.amount, 1)
+    t.equal(balance.all[balance.given[0]].value
+                               .content.amount.toString(), "1")
 
     ssb.tokens.balance(giveMsg.value.content.tokenType, receiver, function (err, balance) {
     t.error(err)
       
     t.ok(balance)
     t.equal(balance.owner, receiver)
-    t.equal(balance.amount, 1)    
+    t.equal(balance.amount.toString(), "1")    
     t.equal(balance.received.length, 1)
-    t.equal(balance.all[balance.received[0]].value.content.amount, 1)    
-    t.equal(balance.unspent[balance.received[0]].amount, 1)    
+    t.equal(balance.all[balance.received[0]].value
+                               .content.amount, "1")    
+    t.equal(balance.unspent[balance.received[0]].amount.toString(), "1")    
     t.end()
     }) }) }) }) }) })
   })
@@ -85,12 +90,14 @@ module.exports = function run (ssb) {
 
     t.ok(balance)
     t.equal(balance.owner, creator)
-    t.equal(balance.amount, 0)    
+    t.equal(balance.amount.toString(), "0")    
     t.equal(balance.created.length, 1)    
-    t.equal(balance.all[balance.created[0]].value.content.amount, 10)    
+    t.equal(balance.all[balance.created[0]].value
+                               .content.amount.toString(), "10")    
     t.equal(balance.unspent[balance.created[0]], undefined)    
     t.equal(balance.burnt.length, 1)
-    t.equal(balance.all[balance.burnt[0]].value.content.amount, 10)
+    t.equal(balance.all[balance.burnt[0]].value
+                   .content.amount.toString(), "10")
     t.end()
     }) }) }) }) 
   })
@@ -121,12 +128,14 @@ module.exports = function run (ssb) {
     
     t.ok(balance)
     t.equal(balance.owner, receiver)
-    t.equal(balance.amount, 0)    
+    t.equal(balance.amount.toString(), "0")    
     t.equal(balance.received.length, 1)    
-    t.equal(balance.all[balance.received[0]].value.content.amount, 1)    
+    t.equal(balance.all[balance.received[0]].value
+                   .content.amount.toString(), "1")    
     t.equal(balance.unspent[balance.received[0]], undefined)    
     t.equal(balance.burnt.length, 1)
-    t.equal(balance.all[balance.burnt[0]].value.content.amount, 1)
+    t.equal(balance.all[balance.burnt[0]].value
+                    .content.amount.toString(), "1")
     t.end()
     }) }) }) }) }) })
   })
@@ -149,13 +158,14 @@ module.exports = function run (ssb) {
 
     t.ok(balance)
     t.equal(balance.owner, creator)
-    t.equal(balance.amount, 2)
+    t.equal(balance.amount.toString(), "2")
     t.equal(balance.created.length, 1)
-    t.equal(balance.unspent[balance.created[0]].amount, 1)
+    t.equal(balance.unspent[balance.created[0]].amount.toString(), "1")
     t.equal(balance.received.length, 1)
-    t.equal(balance.unspent[balance.received[0]].amount, 1)
+    t.equal(balance.unspent[balance.received[0]].amount.toString(), "1")
     t.equal(balance.given.length, 1)
-    t.equal(balance.all[balance.given[0]].value.content.amount, 1)
+    t.equal(balance.all[balance.given[0]].value
+                   .content.amount.toString(), "1")
     t.end()
     }) }) }) })
   })
@@ -189,7 +199,6 @@ module.exports = function run (ssb) {
       amount: 1,
       name: 'Shells',
       unit: '',
-      decimals: 0,
       description: null,
       tokenType: 'invalidtokentype'
     }, function (err, msg) {
@@ -202,7 +211,7 @@ module.exports = function run (ssb) {
 
     t.equal(balance.owner, msg.value.author)
     t.equal(balance.tokenType, msg.value.content.tokenType)
-    t.equal(balance.amount, 0)
+    t.equal(balance.amount.toString(), "0")
     t.equal(balance.created.length, 0)
     t.equal(Object.values(balance.all).length, 0)
     t.end()
@@ -215,9 +224,9 @@ module.exports = function run (ssb) {
 
     ssb.publish({
       type: "tokens/" + meta['api-version'] + '/give',
-      amount: 1,
+      amount: "1",
       receiver: receiver,
-      sources: [ { id: missing, amount: 1 } ],
+      sources: [ { id: missing, amount: "1" } ],
       description: null,
       tokenType: 'invalidtokentype'
     }, function (err, msg) {
@@ -233,7 +242,7 @@ module.exports = function run (ssb) {
 
     t.equal(balance.owner, msg.value.author)
     t.equal(balance.tokenType, msg.value.content.tokenType)
-    t.equal(balance.amount, 0)
+    t.equal(balance.amount.toString(), "0")
     t.equal(balance.given.length, 0)
     t.equal(Object.values(balance.all).length, 1)
     t.ok(balance.all[balance.missing.operations[0]])
@@ -245,7 +254,7 @@ module.exports = function run (ssb) {
 
     t.equal(balance.owner, receiver)
     t.equal(balance.tokenType, msg.value.content.tokenType)
-    t.equal(balance.amount, 0)
+    t.equal(balance.amount.toString(), "0")
     t.equal(balance.received.length, 0)
     t.equal(Object.values(balance.all).length, 1)
     t.ok(balance.all[balance.missing.operations[0]])

@@ -381,8 +381,7 @@ module.exports = function (ssb) {
           content: {
             type: util.createType,
             name: "Invalid Token",
-            unit: '',
-            decimals: -1,
+            unit: 2,
             description: null
           },
           private: false
@@ -415,8 +414,7 @@ module.exports = function (ssb) {
           content: {
             type: util.createType,
             name: "Invalid Token",
-            unit: '',
-            decimals: -1,
+            unit: 2,
             description: null
           },
           private: false
@@ -449,8 +447,7 @@ module.exports = function (ssb) {
           content: {
             type: util.createType,
             name: "Invalid Token",
-            unit: '',
-            decimals: -1,
+            unit: 2,
             description: null
           },
           private: false

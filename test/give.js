@@ -1,6 +1,7 @@
 var tape = require('tape')
 var meta = require('../')
 var util = require('util')
+var Decimal = require('decimal.js')
 
 
 module.exports = function run (ssb) {
@@ -49,6 +50,8 @@ module.exports = function run (ssb) {
 
     ssb.tokens.give({ amount: 1 }, id, function (err, giveMsg) {
     t.true(err)
+    t.true(err.id)
+    t.true(err.tokenType)
     t.end()
     }) }) })
   })
@@ -63,6 +66,7 @@ module.exports = function run (ssb) {
 
     ssb.tokens.give('blabla', id, function (err, giveMsg) {
     t.true(err)
+    t.true(err.id)
     t.end()
     }) }) })
   })
@@ -90,6 +94,35 @@ module.exports = function run (ssb) {
 
     ssb.tokens.give({ id: createMsg.key, amount: 1 }, id, function (err, giveMsg) {
     t.error(err)
+    t.equal(giveMsg.value.content.amount, "1")
+    t.end()
+    }) }) })
+  })
+
+  tape('give: correct with string amount and operation id', function (t) {
+    ssb.tokens.create(1, 'Give Shell', function (err, createMsg) {
+    t.error(err)
+
+    ssb.identities.create(function (err, id) {
+    t.error(err)
+
+    ssb.tokens.give({ id: createMsg.key, amount: "1" }, id, function (err, giveMsg) {
+    t.error(err)
+    t.equal(giveMsg.value.content.amount, "1")
+    t.end()
+    }) }) })
+  })
+
+  tape('give: correct with Decimal amount and operation id', function (t) {
+    ssb.tokens.create(1, 'Give Shell', function (err, createMsg) {
+    t.error(err)
+
+    ssb.identities.create(function (err, id) {
+    t.error(err)
+
+    ssb.tokens.give({ id: createMsg.key, amount: Decimal("1") }, id, function (err, giveMsg) {
+    t.error(err)
+    t.equal(giveMsg.value.content.amount, "1")
     t.end()
     }) }) })
   })
@@ -107,6 +140,7 @@ module.exports = function run (ssb) {
     { tokenType: badTokenType }, 
     id, function (err, giveMsg) {
     t.true(err)
+    t.true(err.tokenType)
     t.end()
     }) }) })
   })
@@ -121,6 +155,8 @@ module.exports = function run (ssb) {
     { tokenType: emptyTokenType }, 
     id, function (err, giveMsg) {
     t.true(err)
+    t.true(err.sources)
+    t.true(err.notFound)
     t.end()
     }) }) 
   })
@@ -139,10 +175,10 @@ module.exports = function run (ssb) {
     t.error(err)
     var op = giveMsg.value.content
     t.ok(op)
-    t.equal(op.amount, 1)
+    t.equal(Number(op.amount), 1)
     t.equal(op.sources.length, 1)
     t.equal(op.sources[0].id, createMsg.key)
-    t.equal(op.sources[0].amount, 1)
+    t.equal(Number(op.sources[0].amount), 1)
     t.equal(op.tokenType, createMsg.value.content.tokenType)
     t.end()
     }) }) })
@@ -161,20 +197,20 @@ module.exports = function run (ssb) {
     t.error(err)
     var op = giveMsg.value.content
     t.ok(op)
-    t.equal(op.amount, 2)
+    t.equal(Number(op.amount), 2)
     t.equal(op.sources.length, 1)
     t.equal(op.sources[0].id, createMsg.key)
-    t.equal(op.sources[0].amount, 2)
+    t.equal(Number(op.sources[0].amount), 2)
     t.equal(op.tokenType, createMsg.value.content.tokenType)
     t.end()
     }) }) })
   })
 
-  tape('give: correct from multiple sources with token-hash', function (t) {
-    ssb.tokens.create(1, 'GiveMultTokenHash', function (err, createMsg1) {
+  tape('give: correct from multiple sources with tokenType', function (t) {
+    ssb.tokens.create(1, 'GiveMultTokenType', function (err, createMsg1) {
     t.error(err)
 
-    ssb.tokens.create(1, 'GiveMultTokenHash', function (err, createMsg2) {
+    ssb.tokens.create(1, 'GiveMultTokenType', function (err, createMsg2) {
     t.error(err)
 
     ssb.identities.create(function (err, id) {
@@ -189,12 +225,12 @@ module.exports = function run (ssb) {
     var sourceIds = { } 
     sourceIds[createMsg1.key] = true
     sourceIds[createMsg2.key] = true 
-    t.equal(op.amount, 2)
+    t.equal(Number(op.amount), 2)
     t.equal(op.sources.length, 2)
     t.ok(op.sources[0].id in sourceIds)
-    t.equal(op.sources[0].amount, 1)
+    t.equal(Number(op.sources[0].amount), 1)
     t.ok(op.sources[1].id in sourceIds)
-    t.equal(op.sources[1].amount, 1)
+    t.equal(Number(op.sources[1].amount), 1)
     t.end()
     }) }) }) })
   })
@@ -211,6 +247,9 @@ module.exports = function run (ssb) {
       createMsg.value.content.tokenType
     }, id, function (err, giveMsg) {
     t.true(err)
+    t.true(err.sources)
+    t.true(err.unspent)
+    t.true(err.insufficient)
     t.end()
     }) }) })
   })
@@ -232,8 +271,11 @@ module.exports = function run (ssb) {
     ssb.tokens.give({ 
       amount: 1, 
       tokenType: tokenType 
-    }, id, function (err, giveMsg1) {
+    }, id, function (err, giveMsg2) {
     t.true(err)    
+    t.true(err.sources)
+    t.true(err.unspent)
+    t.true(err.insufficient)
     t.end()
     }) }) }) })
   })
@@ -255,7 +297,7 @@ module.exports = function run (ssb) {
     t.error(err)
     var op = giveMsg.value.content 
     t.ok(op)
-    t.equal(op.amount, 2)
+    t.equal(Number(op.amount), 2)
     var sourceIds = op.sources.map((s) => s.id)
     t.ok(sourceIds.indexOf(createMsg1.key) > -1)
     t.ok(sourceIds.indexOf(createMsg2.key) > -1)
@@ -281,6 +323,7 @@ module.exports = function run (ssb) {
     receiver, 
     { author: giver }, function (err, giveMsg) {
     t.true(err)
+    t.true(err.notOwner)
     t.end()
     }) }) }) })
   })
@@ -293,6 +336,7 @@ module.exports = function run (ssb) {
 
     ssb.tokens.give(missing, receiver, function (err, giveMsg) {
     t.true(err)
+    t.true(err.notFound)
     t.end()
     }) })
   })

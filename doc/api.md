@@ -204,7 +204,6 @@ Options can be the following:
 {
     name: String[30],                  // Mandatory
     unit: String[10],                  // Default: ''
-    decimals: Number,                  // Default: 0
     description: SSB_MSG_ID || null,   // Default: null
     author: SSB_LOG_ID || null,        // Default: null
     publish: Boolean                   // Default: true
@@ -218,8 +217,6 @@ where:
   custom token code).
 * `description`: is an optional [SSB Message ID](#ssb-message-id) whose content
   describes the purpose and conditions of the tokens.
-* `decimals`: is a number that represents the largest number of decimals
-  supported, when subdividing the token (ex: 2 for cents in `USD`).
 * `author`: is the [SSB Log ID](#ssb-log-id) that is creating the tokens. If
   `null`, use the default log ID
   ([ssb-server](https://github.com/ssbc/ssb-server) uses `~/.ssb/secret` by
@@ -241,12 +238,11 @@ extended with the following operation:
 ```json
 {
     "type": "tokens/<version>/create", 
-    "amount": amount, // Number
+    "amount": amount, // String
     "name": options.name, // String 
     "unit": options.unit, // String
-    "decimals": options.decimals, // Number
     "description": options.description, // String || null
-    "tokenType": hash(options.name + options.unit + options.decimals + 
+    "tokenType": hash(options.name + options.unit + 
                       options.description + options.description) // String
 }
 ```
@@ -319,8 +315,8 @@ extended with the following operation:
 ```json
 {
     "type": "tokens/<version>/give",
-    "sources": [ { amount: Number, id: operation-id }, ... ],
-    "amount": Number,
+    "sources": [ { amount: String, id: operation-id }, ... ],
+    "amount": String,
     "receiver": SSB_LOG_ID,
     "tokenType": String, // Same as operations listed in source
 }
@@ -397,8 +393,8 @@ extended with the following operation:
 ```json
 {
     "type": "tokens/<version>/burn",
-    "sources": [ { amount: Number, id: operation_id }, ... ],
-    "amount": Number,
+    "sources": [ { amount: String, id: operation_id }, ... ],
+    "amount": String,
     "tokenType": String // Same as operations listed in source
 }
 ```
@@ -485,7 +481,8 @@ if the query was successful. The `balance` is:
 {
     owner: SSB_LOG_ID,
     tokenType: String,
-    amount: Number,
+    amount: Decimal,               // net balance as a 
+                                   // [Decimal number](https://github.com/MikeMcl/decimal.js)
     created: [ SSB_MSG_ID, ... ],  // All create operations by owner
     received: [ SSB_MSG_ID, ... ], // All give operations with owner as receiver  
     given: [ SSB_MSG_ID, ... ],    // All give operations by owner
@@ -493,7 +490,7 @@ if the query was successful. The `balance` is:
     unspent: {
       SSB_MSG_ID: {                // Dictionary of all operations with non-zero 
         id: SSB_MSG_ID,            // unspent amounts. unspent properties
-        amount: Number,            // are in order of timestamp 
+        amount: Decimal,           // are in order of timestamp 
         tokenType: String,
         timestamp: Date
       }, ...
@@ -623,7 +620,6 @@ Options can be the following:
 {
     match: {
         author: SSB_LOG_ID,        // Default: undefined (match any)
-        decimals: Number,          // Default: undefined (match any)
         description: SSB_MSG_ID,   // Default: undefined (match any)
         name: String,              // Default: undefined (match any) 
         unit: String,              // Default: undefined (match any)
@@ -662,7 +658,8 @@ Compute the unspent amount from `msg`, as owned by `owner`, up to `owner`'s log
 
 The callback should have signature `cb(err, unspent, msg)`.  `err` is `null` if
 the query was successful or `Error` (truthy) otherwise. `unspent` is the
-amount of unspent tokens from `msg` [SSB Message](#ssb-message-format).
+amount of unspent tokens from `msg` [SSB Message](#ssb-message-format) 
+as a [Decimal number](https://github.com/MikeMcl/decimal.js).
 
 #### Errors
 

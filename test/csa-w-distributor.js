@@ -86,14 +86,14 @@ module.exports = function run (ssb) {
     ssb.tokens.balance(farmerCredit, buyer, function (err, bal) {
     t.error(err)
     t.equal(bal.tokenType, farmerCredit)
-    t.equal(bal.amount, 0)
+    t.equal(bal.amount.toNumber(), 0)
     t.equal(bal.given.length, 1)
     t.equal(bal.given[0], giveFCMsg2.key)
 
     ssb.tokens.balance(distributorCredit, buyer, function (err, bal) {
     t.error(err)
     t.equal(bal.tokenType, distributorCredit)
-    t.equal(bal.amount, 0)
+    t.equal(bal.amount.toNumber(), 0)
     t.equal(bal.received.length, 1)
     t.equal(bal.received[0], giveDCMsg.key)
     t.equal(bal.given.length, 1)
@@ -102,7 +102,7 @@ module.exports = function run (ssb) {
     ssb.tokens.balance(farmerCredit, distributor, function (err, bal) {
     t.error(err)
     t.equal(bal.tokenType, farmerCredit)
-    t.equal(bal.amount, 0)
+    t.equal(bal.amount.toNumber(), 0)
     t.equal(bal.received.length, 1)
     t.equal(bal.received[0], giveFCMsg2.key)
     t.equal(bal.given.length, 1)
@@ -111,7 +111,7 @@ module.exports = function run (ssb) {
     ssb.tokens.balance(distributorCredit, distributor, function (err, bal) {
     t.error(err)
     t.equal(bal.tokenType, distributorCredit)
-    t.equal(bal.amount, 0)
+    t.equal(bal.amount.toNumber(), 0)
     t.equal(bal.created.length, 1)
     t.equal(bal.created[0], createDCMsg.key)
     t.equal(bal.received.length, 1)
@@ -121,7 +121,6 @@ module.exports = function run (ssb) {
     t.equal(bal.burnt.length, 1)
     t.equal(bal.burnt[0], burnDCMsg.key)
 
-    t.error(err)
     t.end()
     }) }) }) }) }) }) }) }) }) }) }) }) }) }) }) }) }) })
   })

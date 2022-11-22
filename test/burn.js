@@ -1,5 +1,6 @@
 var tape = require('tape')
 var meta = require('../')
+var Decimal = require('decimal.js')
 
 module.exports = function run (ssb) {
   tape('burn: with operation-id', function (t) {
@@ -15,7 +16,7 @@ module.exports = function run (ssb) {
     t.equal(op.amount, createMsg.value.content.amount)
     t.equal(op.sources.length, 1)
     t.equal(op.sources[0].id, createMsg.key)
-    t.equal(op.sources[0].amount, 1)
+    t.equal(op.sources[0].amount, "1")
     t.end()
     }) })
   })
@@ -23,6 +24,8 @@ module.exports = function run (ssb) {
   tape('burn: incorrect with invalid operation-id', function (t) {
     ssb.tokens.burn(2, function (err, burnMsg) {
     t.true(err)
+    t.true(err.sources)
+    t.true(err.invalid)
     t.end()
     })
   })
@@ -30,6 +33,8 @@ module.exports = function run (ssb) {
   tape('burn: incorrect with invalid array of operation-id', function (t) {
     ssb.tokens.burn([2], function (err, burnMsg) {
     t.true(err)
+    t.true(err.sources)
+    t.true(err.invalid)
     t.end()
     })
   })
@@ -50,8 +55,9 @@ module.exports = function run (ssb) {
     t.ok(op)
     t.equal(op.tokenType, createMsg1.value.content.tokenType)
     t.equal(op.tokenType, createMsg2.value.content.tokenType)
-    t.equal(op.amount, createMsg1.value.content.amount + 
-                        createMsg2.value.content.amount)
+    t.equal(op.amount.toString(), Decimal(createMsg1.value.content.amount)
+                                  .add(Decimal(createMsg2.value.content.amount))
+                                  .toString())
     t.equal(op.sources.length, 2)
     t.ok(sourceIds.indexOf(op.sources[0].id) > -1)
     t.ok(sourceIds.indexOf(op.sources[1].id) > -1)
@@ -73,6 +79,8 @@ module.exports = function run (ssb) {
 
     ssb.tokens.burn(createMsg.key, function (err, burnMsg) {
     t.true(err)
+    t.true(err.sources)
+    t.true(err.alreadySpent)
     t.end()
     }) }) }) })
   })
@@ -86,6 +94,8 @@ module.exports = function run (ssb) {
 
     ssb.tokens.burn(createMsg.key, function (err, burnMsg2) {
     t.true(err)
+    t.true(err.sources)
+    t.true(err.alreadySpent)
     t.end()
     }) }) })
   })
@@ -99,6 +109,8 @@ module.exports = function run (ssb) {
 
     ssb.tokens.burn(createMsg.key, { author: nonOwner }, function (err) {
     t.true(err)
+    t.true(err.sources)
+    t.true(err.notOwner)
     t.end()
     }) }) })
   })
@@ -108,6 +120,7 @@ module.exports = function run (ssb) {
 
     ssb.tokens.burn(missing, function (err) {
     t.true(err)
+    t.true(err.notFound)
     t.end()
     })
   })

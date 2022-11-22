@@ -64,11 +64,11 @@ module.exports = function (ssb) {
     t.error(err)
 
     t.equal(bal.tokenType, shopPoint)
-    t.equal(bal.amount, 0)
+    t.equal(bal.amount.toNumber(), 0)
     t.equal(bal.created.length, 0)
     t.equal(bal.received.length, 10)
     t.equal(bal.received.map((id) => { 
-      return bal.all[id].value.content.amount
+      return Number(bal.all[id].value.content.amount)
     }).reduce((a,b) => a+b, 0), 10)
     t.equal(bal.given.length, 1)
     t.equal(bal.burnt.length, 0)
@@ -77,19 +77,19 @@ module.exports = function (ssb) {
     t.error(err)
 
     t.equal(bal.tokenType, shopPoint)
-    t.equal(bal.amount, 0)
+    t.equal(bal.amount.toNumber(), 0)
     t.equal(bal.created.length, 10)
     t.equal(bal.created.map((id) => {
-      return bal.all[id].value.content.amount
+      return Number(bal.all[id].value.content.amount)
     }).reduce((a,b) => a+b, 0), 10)
     t.equal(bal.received.length, 1)
-    t.equal(bal.all[bal.received[0]].value.content.amount, 10)
+    t.equal(bal.all[bal.received[0]].value.content.amount, "10")
     t.equal(bal.given.length, 10)
     t.equal(bal.given.map((id) => {
-      return bal.all[id].value.content.amount
+      return Number(bal.all[id].value.content.amount)
     }).reduce((a,b) => a+b, 0), 10)
     t.equal(bal.burnt.length, 1)
-    t.equal(bal.all[bal.burnt[0]].value.content.amount, 10)
+    t.equal(bal.all[bal.burnt[0]].value.content.amount, "10")
 
     t.end()
     }) }) }) }) }) }) }) })

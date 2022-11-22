@@ -16,10 +16,9 @@ module.exports = function run (ssb) {
         author: author,
         content: {
           type: "tokens/" + meta["api-version"] + "/create",
-          amount: 10,
+          amount: "10",
           name: "Create Coin",
           unit: "CRC",
-          decimals: 0,
           description: null
         }
       }
@@ -42,10 +41,9 @@ module.exports = function run (ssb) {
         author: author,
         content: {
           type: "tokens/" + meta["api-version"] + "/create",
-          amount: 10,
+          amount: "10",
           name: "Create Coin",
           unit: "CRC",
-          decimals: 0,
           description: null
         }
       }
@@ -53,6 +51,7 @@ module.exports = function run (ssb) {
       createMsg.content.tokenType = 'z' + createMsg.content.tokenType.slice(1)
       ssb.tokens.validate.requirements(createMsg, function (err, msg) {
         t.true(err)
+        t.true(err.tokenType)
         t.end()
       })
     })
@@ -70,9 +69,9 @@ module.exports = function run (ssb) {
         author: msg.value.author,
         content: {
           type: "tokens/" + meta['api-version'] + "/give",
-          sources: [ { id: msg.key, amount: 1 } ],
+          sources: [ { id: msg.key, amount: "1" } ],
           receiver: msg.value.author,
-          amount: 1,
+          amount: "1",
           description: null,
           tokenType: msg.value.content.tokenType
         }
@@ -93,9 +92,9 @@ module.exports = function run (ssb) {
         author: msg.value.author,
         content: {
           type: "tokens/" + meta['api-version'] + "/give",
-          sources: [ { id: msg.key, amount: 1 } ],
+          sources: [ { id: msg.key, amount: "1" } ],
           receiver: msg.value.author,
-          amount: 1,
+          amount: "1",
           description: null,
           tokenType: 'abcdef1234567890'
         }
@@ -103,6 +102,8 @@ module.exports = function run (ssb) {
 
       ssb.tokens.validate.requirements(giveMsgValue, function (err, msg) {
         t.true(err)
+        t.true(err.sources)
+        t.true(err.type)
         t.end()
       })
     })
@@ -111,10 +112,9 @@ module.exports = function run (ssb) {
   tape('requirements(giveOp): incorrect source with the right type', function (t) {
     ssb.publish({ 
       type: "tokens/" + meta["api-version"] + "/create",
-      amount: 10,
+      amount: "10",
       name: "Create Coin",
       unit: "CRC",
-      decimals: 0,
       description: null,
       tokenType: 'abcdef0123456789' // Invalid token type
     }, function (err, msg) {
@@ -122,9 +122,9 @@ module.exports = function run (ssb) {
         author: msg.value.author,
         content: {
           type: "tokens/" + meta['api-version'] + "/give",
-          sources: [ { id: msg.key, amount: 1 } ],
+          sources: [ { id: msg.key, amount: "1" } ],
           receiver: msg.value.author,
-          amount: 1,
+          amount: "1",
           description: null,
           tokenType: 'abcdef1234567890'
         }
@@ -132,6 +132,8 @@ module.exports = function run (ssb) {
 
       ssb.tokens.validate.requirements(giveMsgValue, function (err, msg) {
         t.true(err)
+        t.true(err.sources)
+        t.true(err.tokenType)
         t.end()
       })
     })
@@ -146,9 +148,9 @@ module.exports = function run (ssb) {
         author: msg.value.author,
         content: {
           type: "tokens/" + meta['api-version'] + "/give",
-          sources: [ { id: msg.key, amount: 1 } ],
+          sources: [ { id: msg.key, amount: "1" } ],
           receiver: msg.value.author,
-          amount: 1,
+          amount: "1",
           description: null,
           tokenType: tokenType2
         }
@@ -156,6 +158,8 @@ module.exports = function run (ssb) {
 
       ssb.tokens.validate.requirements(giveMsgValue, function (err, msg) {
         t.true(err)
+        t.true(err.sources)
+        t.true(err.tokenType)
         t.end()
       })
     })
@@ -175,9 +179,9 @@ module.exports = function run (ssb) {
             author: msg.value.author,
             content: {
               type: "tokens/" + meta['api-version'] + "/give",
-              sources: [ { id: msg.key, amount: 1 } ],
+              sources: [ { id: msg.key, amount: "1" } ],
               receiver: msg.value.author,
-              amount: 1,
+              amount: "1",
               description: null,
               tokenType: msg.value.content.tokenType
             }
@@ -185,6 +189,8 @@ module.exports = function run (ssb) {
 
           ssb.tokens.validate.requirements(giveMsgValue, function (err, msg) {
             t.true(err)
+            t.true(err.sources)
+            t.true(err.receiver)
             t.end()
           })
         })
@@ -203,9 +209,9 @@ module.exports = function run (ssb) {
           author: author,
           content: {
             type: "tokens/" + meta['api-version'] + "/give",
-            sources: [ { id: msg.key, amount: 1 } ],
+            sources: [ { id: msg.key, amount: "1" } ],
             receiver: msg.value.author,
-            amount: 1,
+            amount: "1",
             description: null,
             tokenType: msg.value.content.tokenType
           }
@@ -213,6 +219,8 @@ module.exports = function run (ssb) {
 
         ssb.tokens.validate.requirements(giveMsgValue, function (err, msg) {
           t.true(err)
+          t.true(err.sources)
+          t.true(err.author)
           t.end()
         })
       })
@@ -227,9 +235,9 @@ module.exports = function run (ssb) {
         author: msg.value.author,
         content: {
           type: "tokens/" + meta['api-version'] + "/give",
-          sources: [ { id: msg.key, amount: 2 } ],
+          sources: [ { id: msg.key, amount: "2" } ],
           receiver: msg.value.author,
-          amount: 2,
+          amount: "2",
           description: null,
           tokenType: msg.value.content.tokenType
         }
@@ -237,6 +245,9 @@ module.exports = function run (ssb) {
 
       ssb.tokens.validate.requirements(giveMsgValue, function (err, msg) {
         t.true(err)
+        t.true(err.sources)
+        t.true(err.unspent)
+        t.true(err.insufficient)
         t.end()
       })
     })
@@ -289,9 +300,9 @@ module.exports = function run (ssb) {
 
         var giveOp2 = {
           type: "tokens/" + meta['api-version'] + "/give",
-          sources: [ { id: createMsg.key, amount: 1 } ],
+          sources: [ { id: createMsg.key, amount: "1" } ],
           receiver: createMsg.value.author,
-          amount: 1,
+          amount: "1",
           description: null,
           tokenType: createMsg.value.content.tokenType
         }
@@ -299,6 +310,9 @@ module.exports = function run (ssb) {
         ssb.publish(giveOp2, function (err, giveMsg2) {
           ssb.tokens.validate.requirements(giveMsg2.value, function (err, msg) {
             t.true(err)
+            t.true(err.sources)
+            t.true(err.unspent)
+            t.true(err.insufficient)
             t.end()
           })
         })
@@ -315,9 +329,9 @@ module.exports = function run (ssb) {
         author: author.id,
         content: {
           type: "tokens/" + meta['api-version'] + "/give",
-          sources: [ { id: missing, amount: 1 } ],
+          sources: [ { id: missing, amount: "1" } ],
           receiver: author.id,
-          amount: 1,
+          amount: "1",
           description: null,
           tokenType: 'BLABLABLABLABLAA'
         }
@@ -325,6 +339,9 @@ module.exports = function run (ssb) {
 
       ssb.tokens.validate.requirements(giveMsgValue, function (err, msg) {
         t.true(err)
+        t.true(err.sources)
+        t.true(err.sources.indexOf(missing) >= 0)
+        t.true(err.notFound)
         t.end()
       })
     })
@@ -338,8 +355,8 @@ module.exports = function run (ssb) {
         author: msg.value.author,
         content: {
           type: "tokens/" + meta['api-version'] + "/burn",
-          sources: [ { id: msg.key, amount: 10 } ],
-          amount: 10,
+          sources: [ { id: msg.key, amount: "10" } ],
+          amount: "10",
           description: null,
           tokenType: msg.value.content.tokenType
         }
@@ -360,8 +377,8 @@ module.exports = function run (ssb) {
         author: msg.value.author,
         content: {
           type: "tokens/" + meta['api-version'] + "/burn",
-          sources: [ { id: msg.key, amount: 1 } ],
-          amount: 1,
+          sources: [ { id: msg.key, amount: "1" } ],
+          amount: "1",
           description: null,
           tokenType: 'abcdef1234567890'
         }
@@ -369,6 +386,8 @@ module.exports = function run (ssb) {
 
       ssb.tokens.validate.requirements(burnMsgValue, function (err, msg) {
         t.true(err)
+        t.true(err.sources)
+        t.true(err.type)
         t.end()
       })
     })
@@ -377,10 +396,9 @@ module.exports = function run (ssb) {
   tape('requirements(burnOp): incorrect source with the right type', function (t) {
     ssb.publish({ 
       type: "tokens/" + meta["api-version"] + "/create",
-      amount: 10,
+      amount: "10",
       name: "Create Coin",
       unit: "CRC",
-      decimals: 0,
       description: null,
       tokenType: 'abcdef0123456789' // Invalid token type
     }, function (err, msg) {
@@ -388,8 +406,8 @@ module.exports = function run (ssb) {
         author: msg.value.author,
         content: {
           type: "tokens/" + meta['api-version'] + "/burn",
-          sources: [ { id: msg.key, amount: 1 } ],
-          amount: 1,
+          sources: [ { id: msg.key, amount: "1" } ],
+          amount: "1",
           description: null,
           tokenType: 'abcdef1234567890'
         }
@@ -397,6 +415,9 @@ module.exports = function run (ssb) {
 
       ssb.tokens.validate.requirements(burnMsgValue, function (err, msg) {
         t.true(err)
+        t.true(err.sources)
+        t.false(err.type)
+        t.true(err.tokenType)
         t.end()
       })
     })
@@ -411,15 +432,18 @@ module.exports = function run (ssb) {
         author: msg.value.author,
         content: {
           type: "tokens/" + meta['api-version'] + "/burn",
-          sources: [ { id: msg.key, amount: 1 } ],
-          amount: 1,
+          sources: [ { id: msg.key, amount: "1" } ],
+          amount: "1",
           description: null,
           tokenType: tokenType2
         }
     }
 
-      ssb.tokens.validate.requirements(burnMsgValue, function (err, msg) {
+      ssb.tokens.validate.requirements(burnMsgValue, function (err, _msg) {
         t.true(err)
+        t.true(err.sources)
+        t.true(err.sources.indexOf(msg.key) >= 0)
+        t.true(err.tokenType)
         t.end()
       })
     })
@@ -439,15 +463,18 @@ module.exports = function run (ssb) {
             author: msg.value.author,
             content: {
               type: "tokens/" + meta['api-version'] + "/burn",
-              sources: [ { id: msg.key, amount: 1 } ],
-              amount: 1,
+              sources: [ { id: msg.key, amount: "1" } ],
+              amount: "1",
               description: null,
               tokenType: msg.value.content.tokenType
             }
           }
 
-          ssb.tokens.validate.requirements(burnMsgValue, function (err, msg) {
+          ssb.tokens.validate.requirements(burnMsgValue, function (err, _msg) {
             t.true(err)
+            t.true(err.sources)
+            t.true(err.sources.indexOf(msg.key) >= 0)
+            t.true(err.receiver)
             t.end()
           })
         })
@@ -466,22 +493,25 @@ module.exports = function run (ssb) {
           author: author,
           content: {
             type: "tokens/" + meta['api-version'] + "/burn",
-            sources: [ { id: msg.key, amount: 1 } ],
-            amount: 1,
+            sources: [ { id: msg.key, amount: "1" } ],
+            amount: "1",
             description: null,
             tokenType: msg.value.content.tokenType
           }
         }
 
-        ssb.tokens.validate.requirements(burnMsgValue, function (err, msg) {
+        ssb.tokens.validate.requirements(burnMsgValue, function (err, _msg) {
           t.true(err)
+          t.true(err.sources)
+          t.true(err.sources.indexOf(msg.key) >= 0)
+          t.true(err.author)
           t.end()
         })
       })
     })
   })
   
-  tape('requirements(burnOp): insufficient unspent from source', function (t) {
+  tape('requirements(burnOp): incorrect with inconsistent source amount', function (t) {
     ssb.tokens.create(1, 'Shells', function (err, msg) {
       t.false(err)
 
@@ -489,15 +519,18 @@ module.exports = function run (ssb) {
         author: msg.value.author,
         content: {
           type: "tokens/" + meta['api-version'] + "/burn",
-          sources: [ { id: msg.key, amount: 2 } ],
-          amount: 2,
+          sources: [ { id: msg.key, amount: "2" } ],
+          amount: "2",
           description: null,
           tokenType: msg.value.content.tokenType
         }
       }
 
-      ssb.tokens.validate.requirements(burnMsgValue, function (err, msg) {
+      ssb.tokens.validate.requirements(burnMsgValue, function (err, _msg) {
         t.true(err)
+        t.true(err.sources)
+        t.true(err.sources.indexOf(msg.key) >= 0)
+        t.true(err.inconsistent)
         t.end()
       })
     })
@@ -517,14 +550,15 @@ module.exports = function run (ssb) {
 
         var giveOp2 = {
           type: "tokens/" + meta['api-version'] + "/give",
-          sources: [ { id: createMsg.key, amount: 1 } ],
+          sources: [ { id: createMsg.key, amount: "1" } ],
           receiver: createMsg.value.author,
-          amount: 1,
+          amount: "1",
           description: null,
           tokenType: createMsg.value.content.tokenType
         }
 
         ssb.publish(giveOp2, function (err, giveMsg2) {
+
           ssb.tokens.validate.requirements(burnMsg.value, function (err, msg) {
             t.false(err)
             t.end()
@@ -548,9 +582,9 @@ module.exports = function run (ssb) {
 
         var giveOp2 = {
           type: "tokens/" + meta['api-version'] + "/give",
-          sources: [ { id: createMsg.key, amount: 1 } ],
+          sources: [ { id: createMsg.key, amount: "1" } ],
           receiver: createMsg.value.author,
-          amount: 1,
+          amount: "1",
           description: null,
           tokenType: createMsg.value.content.tokenType
         }
@@ -558,6 +592,9 @@ module.exports = function run (ssb) {
         ssb.publish(giveOp2, function (err, giveMsg2) {
           ssb.tokens.validate.requirements(giveMsg2.value, function (err, msg) {
             t.true(err)
+            t.true(err.sources)
+            t.true(err.unspent)
+            t.true(err.insufficient)
             t.end()
           })
         })
@@ -574,8 +611,8 @@ module.exports = function run (ssb) {
         author: author.id,
         content: {
           type: "tokens/" + meta['api-version'] + "/burn",
-          sources: [ { id: missing, amount: 1 } ],
-          amount: 1,
+          sources: [ { id: missing, amount: "1" } ],
+          amount: "1",
           description: null,
           tokenType: 'BLABLABLABLABLAA'
         }
@@ -583,6 +620,9 @@ module.exports = function run (ssb) {
 
       ssb.tokens.validate.requirements(burnMsgValue, function (err, msg) {
         t.true(err)
+        t.true(err.sources)
+        t.true(err.sources.indexOf(missing) >= 0)
+        t.true(err.notFound)
         t.end()
       })
     })

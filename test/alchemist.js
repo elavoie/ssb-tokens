@@ -28,7 +28,7 @@ module.exports = function run (ssb) {
     t.error(err)
 
     t.equal(bal.tokenType, alchemistTok)
-    t.equal(bal.amount, 99)
+    t.equal(bal.amount.toNumber(), 99)
     t.equal(bal.created.length, 1)
     t.equal(bal.created[0], createMsg.key)
     t.equal(bal.given.length, 1)
@@ -40,7 +40,7 @@ module.exports = function run (ssb) {
     t.error(err)
 
     t.equal(bal.tokenType, alchemistTok)
-    t.equal(bal.amount, 1)
+    t.equal(bal.amount.toNumber(), 1)
     t.equal(bal.created.length, 0)
     t.equal(bal.received.length, 1)
     t.equal(bal.received[0], giveMsg.key)
@@ -57,7 +57,7 @@ module.exports = function run (ssb) {
     t.error(err)
 
     t.equal(bal.tokenType, alchemistTok)
-    t.equal(bal.amount, 0)
+    t.equal(bal.amount.toNumber(), 0)
     t.equal(bal.created.length, 0)
     t.equal(bal.received.length, 1)
     t.equal(bal.received[0], giveMsg.key)
@@ -69,7 +69,7 @@ module.exports = function run (ssb) {
     t.error(err)
 
     t.equal(bal.tokenType, alchemistTok)
-    t.equal(bal.amount, 1)
+    t.equal(bal.amount.toNumber(), 1)
     t.equal(bal.created.length, 0)
     t.equal(bal.received.length, 1)
     t.equal(bal.received[0], giveMsg2.key)
@@ -86,7 +86,7 @@ module.exports = function run (ssb) {
     t.error(err)
 
     t.equal(bal.tokenType, alchemistTok)
-    t.equal(bal.amount, 0)
+    t.equal(bal.amount.toNumber(), 0)
     t.equal(bal.created.length, 0)
     t.equal(bal.received.length, 1)
     t.equal(bal.received[0], giveMsg2.key)
@@ -98,7 +98,7 @@ module.exports = function run (ssb) {
     t.error(err)
 
     t.equal(bal.tokenType, alchemistTok)
-    t.equal(bal.amount, 100)
+    t.equal(bal.amount.toNumber(), 100)
     t.equal(bal.created.length, 1)
     t.equal(bal.created[0], createMsg.key)
     t.equal(bal.received.length, 1)
@@ -117,7 +117,7 @@ module.exports = function run (ssb) {
     t.error(err)
 
     t.equal(bal.tokenType, alchemistTok)
-    t.equal(bal.amount, 99)
+    t.equal(bal.amount.toNumber(), 99)
     t.equal(bal.created.length, 1)
     t.equal(bal.created[0], createMsg.key)
     t.equal(bal.received.length, 1)

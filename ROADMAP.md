@@ -53,20 +53,22 @@
            [x] Use a different local ssb-db for alpha release ('~/.ssb-tokens')
        [x] Add automatic matching of token-types from token name for 'give'
     [ ] Paper
-       [ ] Update API to create operations without automatic publishing
+       [x] Update API to create operations without automatic publishing
            on the database
        [ ] Refactor to use decimal.js for arbitrary-precision operations 
            (ERC20 tokens expect 256-bits uint for amounts while JavaScript uses doubles (max 52-bits uint)
-           [ ] Use a single global Decimal constructor with precision limited to 78 digits (just enough
+           [x] Use a single global Decimal constructor with precision limited to 78 digits (just enough
                to represent all uint256 numbers supported by ERC20)
-           [ ] Redefine valueOf to throw exception to prevent accidental usage of primitive operations
-           [ ] Modify type for `amount` to use string instead of Number, with maximum 78 characters
-           [ ] Modify serialization of create, give, and burn operations to use a string 
-           [ ] Modify API input validation for amounts to support strings and tests for 
+           [x] Redefine valueOf to throw exception to prevent accidental usage of primitive operations
+           [x] Modify type for `amount` to use string instead of Number, with maximum 79 characters
+           [x] Modify serialization of create, give, and burn operations to use a string 
+           [x] Fix unit tests
+           [x] Modify create, give, and burn to accept Decimal amounts as inputs
+           [x] Modify API input validation for amounts to support strings and tests for 
                loss of precision when using numbers
-           [ ] Modify queries to return amounts as Decimal object instead of Number
-           [ ] Modify unit tests to use new semantics for decimals
-           [ ] Modify doc/api.md and help/* to reflect new semantics for decimals
+           [x] Modify queries to return amounts as Decimal object instead of Number
+           [x] Remove support for decimals and represent amounts with 79 characters max (78 digits + '.')
+           [x] Modify doc/api.md and help/* to reflect new semantics for decimals
        [ ] Implement simulator of ERC20 transactions (see experiments roadmap)
        [ ] Measure performance
        [ ] Optimize to run in reasonable time on Raspberry Pi 4

@@ -59,17 +59,17 @@ module.exports = function (ssb) {
     t.error(err)
 
     t.equal(bal.tokenType, ssbTokensHour)
-    t.equal(bal.amount, 1)
+    t.equal(bal.amount.toNumber(), 1)
     t.equal(bal.received.length, 1)
-    t.equal(bal.all[bal.received[0]].value.content.amount, 2)
+    t.equal(bal.all[bal.received[0]].value.content.amount, "2")
     t.equal(bal.given.length, 1)
-    t.equal(bal.all[bal.given[0]].value.content.amount, 1)
+    t.equal(bal.all[bal.given[0]].value.content.amount, "1")
 
     ssb.tokens.balance(usd, volunteer, function (err, bal)  {
     t.equal(bal.tokenType, usd)
-    t.equal(bal.amount, 10)
+    t.equal(bal.amount.toNumber(), 10)
     t.equal(bal.received.length, 1)
-    t.equal(bal.all[bal.received[0]].value.content.amount, 10)
+    t.equal(bal.all[bal.received[0]].value.content.amount, "10")
 
     t.end()
     }) }) }) }) }) }) }) }) }) }) }) })

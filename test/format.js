@@ -10,10 +10,9 @@ module.exports = function run (ssb) {
   tape('format(createOp): correct', function (t) {
     var createOp = {
       type: "tokens/" + meta["api-version"] + "/create",
-      amount: 10,
+      amount: "10",
       name: "Create Coin",
       unit: "CRC",
-      decimals: 0,
       description: null
     }
     createOp.tokenType = ssb.tokens.tokenType(null, createOp)
@@ -25,270 +24,179 @@ module.exports = function run (ssb) {
   tape('format(createOp): incorrect type', function (t) {
     var createOp = {
       type: "tokens/" + meta["api-version"] + "/createTypo",
-      amount: 10,
+      amount: "10",
       name: "Create Coin",
       unit: "CRC",
-      decimals: 0,
       description: null
     }
     createOp.tokenType = ssb.tokens.tokenType(null, createOp)
     var err = ssb.tokens.validate.format(createOp)
     t.true(err)
+    t.true(err.type)
     t.end()
   }) 
 
-  tape('format(createOp): incorrect amount', function (t) {
+  tape('format(createOp): correct string amount', function (t) {
     var createOp = {
       type: "tokens/" + meta["api-version"] + "/create",
       amount: "10",
       name: "Create Coin",
       unit: "CRC",
-      decimals: 0,
       description: null
     }
     createOp.tokenType = ssb.tokens.tokenType(null, createOp)
     var err = ssb.tokens.validate.format(createOp)
-    t.true(err)
+    t.false(err)
     t.end()
   }) 
 
   tape('format(createOp): incorrect name', function (t) {
     var createOp = {
       type: "tokens/" + meta["api-version"] + "/create",
-      amount: 10,
+      amount: "10",
       name: 20,
       unit: "CRC",
-      decimals: 0,
       description: null
     }
     createOp.tokenType = ssb.tokens.tokenType(null, createOp)
     var err = ssb.tokens.validate.format(createOp)
     t.true(err)
+    t.true(err.name)
     t.end()
   }) 
 
   tape('format(createOp): name too long', function (t) {
     var createOp = {
       type: "tokens/" + meta["api-version"] + "/create",
-      amount: 10,
+      amount: "10",
       name: "very very verbose vindicative value",
       unit: "CRC",
-      decimals: 0,
       description: null
     }
     createOp.tokenType = ssb.tokens.tokenType(null, createOp)
     var err = ssb.tokens.validate.format(createOp)
     t.true(err)
+    t.true(err.name)
     t.end()
   }) 
 
   tape('format(createOp): incorrect unit', function (t) {
     var createOp = {
       type: "tokens/" + meta["api-version"] + "/create",
-      amount: 10,
+      amount: "10",
       name: "Create Coin",
       unit: 10,
-      decimals: 0,
       description: null
     }
     createOp.tokenType = ssb.tokens.tokenType(null, createOp)
     var err = ssb.tokens.validate.format(createOp)
     t.true(err)
+    t.true(err.unit)
     t.end()
   }) 
 
   tape('format(createOp): unit too long', function (t) {
     var createOp = {
       type: "tokens/" + meta["api-version"] + "/create",
-      amount: 10,
+      amount: "10",
       name: "Create Coin",
       unit: "very verbose unit",
-      decimals: 0,
       description: null
     }
     createOp.tokenType = ssb.tokens.tokenType(null, createOp)
     var err = ssb.tokens.validate.format(createOp)
     t.true(err)
-    t.end()
-  }) 
-
-  tape('format(createOp): incorrect decimals', function (t) {
-    var createOp = {
-      type: "tokens/" + meta["api-version"] + "/create",
-      amount: 10,
-      name: "Create Coin",
-      unit: "CRC",
-      decimals: "10",
-      description: null
-    }
-    createOp.tokenType = ssb.tokens.tokenType(null, createOp)
-    var err = ssb.tokens.validate.format(createOp)
-    t.true(err)
-    t.end()
-  }) 
-
-  tape('format(createOp): incorrect infinite decimals', function (t) {
-    var createOp = {
-      type: "tokens/" + meta["api-version"] + "/create",
-      amount: 10,
-      name: "Create Coin",
-      unit: "CRC",
-      decimals: Infinity,
-      description: null
-    }
-    createOp.tokenType = ssb.tokens.tokenType(null, createOp)
-    var err = ssb.tokens.validate.format(createOp)
-    t.true(err)
-    t.end()
-  }) 
-
-  tape('format(createOp): incorrect non-integer decimals', function (t) {
-    var createOp = {
-      type: "tokens/" + meta["api-version"] + "/create",
-      amount: 10,
-      name: "Create Coin",
-      unit: "CRC",
-      decimals: 1.2,
-      description: null
-    }
-    createOp.tokenType = ssb.tokens.tokenType(null, createOp)
-    var err = ssb.tokens.validate.format(createOp)
-    t.true(err)
-    t.end()
-  }) 
-
-  tape('format(createOp): negative decimals', function (t) {
-    var createOp = {
-      type: "tokens/" + meta["api-version"] + "/create",
-      amount: 10,
-      name: "Create Coin",
-      unit: "CRC",
-      decimals: -1,
-      description: null
-    }
-    createOp.tokenType = ssb.tokens.tokenType(null, createOp)
-    var err = ssb.tokens.validate.format(createOp)
-    t.true(err)
-    t.end()
-  }) 
-
-  tape('format(createOp): decimals too large', function (t) {
-    var createOp = {
-      type: "tokens/" + meta["api-version"] + "/create",
-      amount: 10,
-      name: "Create Coin",
-      unit: "CRC",
-      decimals: 33,
-      description: null
-    }
-    createOp.tokenType = ssb.tokens.tokenType(null, createOp)
-    var err = ssb.tokens.validate.format(createOp)
-    t.true(err)
+    t.true(err.unit)
     t.end()
   }) 
 
   tape('format(createOp): incorrect description', function (t) {
     var createOp = {
       type: "tokens/" + meta["api-version"] + "/create",
-      amount: 10,
+      amount: "10",
       name: "Create Coin",
       unit: "CRC",
-      decimals: 0,
       description: "Free Description!"
     }
     createOp.tokenType = ssb.tokens.tokenType(null, createOp)
     var err = ssb.tokens.validate.format(createOp)
     t.true(err)
+    t.true(err.description)
     t.end()
   }) 
 
   tape('format(createOp): incorrect tokenType', function (t) {
     var createOp = {
       type: "tokens/" + meta["api-version"] + "/create",
-      amount: 10,
+      amount: "10",
       name: "Create Coin",
       unit: "CRC",
-      decimals: 0,
       description: null
     }
     createOp.tokenType = 42 
     var err = ssb.tokens.validate.format(createOp)
     t.true(err)
+    t.true(err.tokenType)
     t.end()
   }) 
 
   tape('format(createOp): tokenType too long', function (t) {
     var createOp = {
       type: "tokens/" + meta["api-version"] + "/create",
-      amount: 10,
+      amount: "10",
       name: "Create Coin",
       unit: "CRC",
-      decimals: 0,
       description: null
     }
     createOp.tokenType = '12345678901234567'
     var err = ssb.tokens.validate.format(createOp)
     t.true(err)
+    t.true(err.tokenType)
     t.end()
   }) 
 
   tape('format(createOp): incorrect negative amount', function (t) {
     var createOp = {
       type: "tokens/" + meta["api-version"] + "/create",
-      amount: -10,
+      amount: "-10",
       name: "Create Coin",
       unit: "CRC",
-      decimals: 0,
       description: null
     }
     createOp.tokenType = ssb.tokens.tokenType(null, createOp)
     var err = ssb.tokens.validate.format(createOp)
     t.true(err)
+    t.true(err.amount)
     t.end()
   }) 
 
   tape('format(createOp): invalid characters in name', function (t) {
     var createOp = {
       type: "tokens/" + meta["api-version"] + "/create",
-      amount: 10,
+      amount: "10",
       name: "Create Coin " + String.fromCharCode(141)[0],
       unit: "CRC",
-      decimals: 0,
       description: null
     }
     createOp.tokenType = ssb.tokens.tokenType(null, createOp)
     var err = ssb.tokens.validate.format(createOp)
     t.true(err)
+    t.true(err.name)
     t.end()
   }) 
 
   tape('format(createOp): invalid characters in unit', function (t) {
     var createOp = {
       type: "tokens/" + meta["api-version"] + "/create",
-      amount: 10,
+      amount: "10",
       name: "Create Coin",
       unit: "CRC" + String.fromCharCode(141)[0],
-      decimals: 0,
       description: null
     }
     createOp.tokenType = ssb.tokens.tokenType(null, createOp)
     var err = ssb.tokens.validate.format(createOp)
     t.true(err)
-    t.end()
-  }) 
-
-  tape('format(createOp): invalid combination of amount and decimals', function (t) {
-    var createOp = {
-      type: "tokens/" + meta["api-version"] + "/create",
-      amount: 10.1,
-      name: "Create Coin",
-      unit: "CRC",
-      decimals: 0,
-      description: null
-    }
-    createOp.tokenType = ssb.tokens.tokenType(null, createOp)
-    var err = ssb.tokens.validate.format(createOp)
-    t.true(err)
+    t.true(err.unit)
     t.end()
   }) 
 
@@ -298,9 +206,9 @@ module.exports = function run (ssb) {
 
       var giveOp = {
         type: "tokens/" + meta['api-version'] + "/give",
-        sources: [ { id: msg.key, amount: 1 } ],
+        sources: [ { id: msg.key, amount: "1" } ],
         receiver: msg.value.author,
-        amount: 1,
+        amount: "1",
         description: null,
         tokenType: msg.value.content.tokenType
       }
@@ -316,15 +224,16 @@ module.exports = function run (ssb) {
 
       var giveOp = {
         type: "tokens/" + meta['api-version'] + "/giveTypo",
-        sources: [ { id: msg.key, amount: 1 } ],
+        sources: [ { id: msg.key, amount: "1" } ],
         receiver: msg.value.author,
-        amount: 1,
+        amount: "1",
         description: null,
         tokenType: msg.value.content.tokenType
       }
 
       var err = ssb.tokens.validate.format(giveOp)
       t.true(err)
+      t.true(err.type)
       t.end()
     })
   })
@@ -335,15 +244,16 @@ module.exports = function run (ssb) {
 
       var giveOp = {
         type: "tokens/" + meta['api-version'] + "/give",
-        sources: [ { id: msg.key, amount: 1 } ],
+        sources: [ { id: msg.key, amount: "1" } ],
         receiver: "BLA",
-        amount: 1,
+        amount: "1",
         description: null,
         tokenType: msg.value.content.tokenType
       }
 
       var err = ssb.tokens.validate.format(giveOp)
       t.true(err)
+      t.true(err.receiver)
       t.end()
     })
   })
@@ -354,15 +264,16 @@ module.exports = function run (ssb) {
 
       var giveOp = {
         type: "tokens/" + meta['api-version'] + "/give",
-        sources: [ { id: msg.key, amount: 1 } ],
+        sources: [ { id: msg.key, amount: "1" } ],
         receiver: msg.value.author,
-        amount: 1,
+        amount: "1",
         description: null,
         tokenType: 123
       }
 
       var err = ssb.tokens.validate.format(giveOp)
       t.true(err)
+      t.true(err.tokenType)
       t.end()
     })
   })
@@ -382,6 +293,7 @@ module.exports = function run (ssb) {
 
       var err = ssb.tokens.validate.format(giveOp)
       t.true(err)
+      t.true(err.tokenType)
       t.end()
     })
   })
@@ -392,15 +304,16 @@ module.exports = function run (ssb) {
 
       var giveOp = {
         type: "tokens/" + meta['api-version'] + "/give",
-        sources: [ { id: msg.key, amount: 1 } ],
+        sources: [ { id: msg.key, amount: '1' } ],
         receiver: msg.value.author,
-        amount: '1',
+        amount: '-1',
         description: null,
         tokenType: msg.value.content.tokenType
       }
 
       var err = ssb.tokens.validate.format(giveOp)
       t.true(err)
+      t.true(err.amount)
       t.end()
     })
   })
@@ -411,15 +324,16 @@ module.exports = function run (ssb) {
 
       var giveOp = {
         type: "tokens/" + meta['api-version'] + "/give",
-        sources: { id: msg.key, amount: 1 },
+        sources: { id: msg.key, amount: '1' },
         receiver: msg.value.author,
-        amount: 1,
+        amount: '1',
         description: null,
         tokenType: msg.value.content.tokenType
       }
 
       var err = ssb.tokens.validate.format(giveOp)
       t.true(err)
+      t.true(err.sources)
       t.end()
     })
   })
@@ -432,13 +346,14 @@ module.exports = function run (ssb) {
         type: "tokens/" + meta['api-version'] + "/give",
         sources: [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
         receiver: msg.value.author,
-        amount: 1,
+        amount: '1',
         description: null,
         tokenType: msg.value.content.tokenType
       }
 
       var err = ssb.tokens.validate.format(giveOp)
       t.true(err)
+      t.true(err.sources)
       t.end()
     })
   })
@@ -451,35 +366,19 @@ module.exports = function run (ssb) {
         type: "tokens/" + meta['api-version'] + "/give",
         sources: [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
         receiver: msg.value.author,
-        amount: 1,
+        amount: '1',
         description: null,
         tokenType: msg.value.content.tokenType
       }
 
       var err = ssb.tokens.validate.format(giveOp)
       t.true(err)
+      t.true(err.sources)
+      t.equal(err.index, 0)
       t.end()
     })
   })
 
-  tape('format(giveOp): invalid source amount', function (t) {
-    ssb.tokens.create(10, 'Shells', function (err, msg) {
-      t.false(err)
-
-      var giveOp = {
-        type: "tokens/" + meta['api-version'] + "/give",
-        sources: [ { amount: '1' } ],
-        receiver: msg.value.author,
-        amount: 1,
-        description: null,
-        tokenType: msg.value.content.tokenType
-      }
-
-      var err = ssb.tokens.validate.format(giveOp)
-      t.true(err)
-      t.end()
-    })
-  })
 
   tape('format(giveOp): invalid source negative amount', function (t) {
     ssb.tokens.create(10, 'Shells', function (err, msg) {
@@ -487,15 +386,18 @@ module.exports = function run (ssb) {
 
       var giveOp = {
         type: "tokens/" + meta['api-version'] + "/give",
-        sources: [ { amount: -1 } ],
+        sources: [ { amount: '-1' } ],
         receiver: msg.value.author,
-        amount: 1,
+        amount: '1',
         description: null,
         tokenType: msg.value.content.tokenType
       }
 
       var err = ssb.tokens.validate.format(giveOp)
       t.true(err)
+      t.true(err.sources)
+      t.true(err.amount)
+      t.equal(err.index, 0)
       t.end()
     })
   })
@@ -506,15 +408,18 @@ module.exports = function run (ssb) {
 
       var giveOp = {
         type: "tokens/" + meta['api-version'] + "/give",
-        sources: [ { amount: 1, id: null } ],
+        sources: [ { amount: '1', id: null } ],
         receiver: msg.value.author,
-        amount: 1,
+        amount: '1',
         description: null,
         tokenType: msg.value.content.tokenType
       }
 
       var err = ssb.tokens.validate.format(giveOp)
       t.true(err)
+      t.true(err.sources)
+      t.true(err.id)
+      t.equal(err.index, 0)
       t.end()
     })
   })
@@ -525,15 +430,18 @@ module.exports = function run (ssb) {
 
       var giveOp = {
         type: "tokens/" + meta['api-version'] + "/give",
-        sources: [ { amount: 1, id: msg.key , additional: null } ],
+        sources: [ { amount: '1', id: msg.key , additional: null } ],
         receiver: msg.value.author,
-        amount: 1,
+        amount: '1',
         description: null,
         tokenType: msg.value.content.tokenType
       }
 
       var err = ssb.tokens.validate.format(giveOp)
       t.true(err)
+      t.true(err.sources)
+      t.equal(err.index, 0)
+      t.true(err.keys)
       t.end()
     })
   })
@@ -544,15 +452,16 @@ module.exports = function run (ssb) {
 
       var giveOp = {
         type: "tokens/" + meta['api-version'] + "/give",
-        sources: [ { amount: 1, id: msg.key } ],
+        sources: [ { amount: '1', id: msg.key } ],
         receiver: msg.value.author,
-        amount: 2,
+        amount: '2',
         description: null,
         tokenType: msg.value.content.tokenType
       }
 
       var err = ssb.tokens.validate.format(giveOp)
       t.true(err)
+      t.true(err.amount)
       t.end()
     })
   })
@@ -563,15 +472,17 @@ module.exports = function run (ssb) {
 
       var giveOp = {
         type: "tokens/" + meta['api-version'] + "/give",
-        sources: [ { amount: 1, id: msg.key }, { amount: 1, id: msg.key } ],
+        sources: [ { amount: '1', id: msg.key }, { amount: '1', id: msg.key } ],
         receiver: msg.value.author,
-        amount: 2,
+        amount: '2',
         description: null,
         tokenType: msg.value.content.tokenType
       }
 
       var err = ssb.tokens.validate.format(giveOp)
       t.true(err)
+      t.true(err.sources)
+      t.true(err.nonunique)
       t.end()
     })
   })
@@ -582,8 +493,8 @@ module.exports = function run (ssb) {
 
       var burnOp = {
         type: "tokens/" + meta['api-version'] + "/burn",
-        sources: [ { id: msg.key, amount: 10 } ],
-        amount: 10,
+        sources: [ { id: msg.key, amount: "10" } ],
+        amount: "10",
         description: null,
         tokenType: msg.value.content.tokenType
       }
@@ -599,14 +510,15 @@ module.exports = function run (ssb) {
 
       var burnOp = {
         type: "tokens/" + meta['api-version'] + "/burnTypo",
-        sources: [ { id: msg.key, amount: 10 } ],
-        amount: 10,
+        sources: [ { id: msg.key, amount: "10" } ],
+        amount: "10",
         description: null,
         tokenType: msg.value.content.tokenType
       }
 
       var err = ssb.tokens.validate.format(burnOp)
       t.true(err)
+      t.true(err.type)
       t.end()
     })
   })
@@ -617,15 +529,16 @@ module.exports = function run (ssb) {
 
       var burnOp = {
         type: "tokens/" + meta['api-version'] + "/burn",
-        sources: [ { id: msg.key, amount: 1 } ],
+        sources: [ { id: msg.key, amount: "1" } ],
         receiver: msg.value.author,
-        amount: 1,
+        amount: "1",
         description: null,
         tokenType: 123
       }
 
       var err = ssb.tokens.validate.format(burnOp)
       t.true(err)
+      t.true(err.tokenType)
       t.end()
     })
   })
@@ -636,15 +549,16 @@ module.exports = function run (ssb) {
 
       var burnOp = {
         type: "tokens/" + meta['api-version'] + "/burn",
-        sources: [ { id: msg.key, amount: 1 } ],
+        sources: [ { id: msg.key, amount: "1" } ],
         receiver: msg.value.author,
-        amount: 1,
+        amount: "1",
         description: null,
         tokenType: msg.value.content.tokenType + "B"
       }
 
       var err = ssb.tokens.validate.format(burnOp)
       t.true(err)
+      t.true(err.tokenType)
       t.end()
     })
   })
@@ -655,15 +569,16 @@ module.exports = function run (ssb) {
 
       var burnOp = {
         type: "tokens/" + meta['api-version'] + "/burn",
-        sources: [ { id: msg.key, amount: 1 } ],
+        sources: [ { id: msg.key, amount: "1" } ],
         receiver: msg.value.author,
-        amount: '1',
+        amount: '-1',
         description: null,
         tokenType: msg.value.content.tokenType
       }
 
       var err = ssb.tokens.validate.format(burnOp)
       t.true(err)
+      t.true(err.amount)
       t.end()
     })
   })
@@ -674,15 +589,16 @@ module.exports = function run (ssb) {
 
       var burnOp = {
         type: "tokens/" + meta['api-version'] + "/burn",
-        sources: { id: msg.key, amount: 1 },
+        sources: { id: msg.key, amount: "1" },
         receiver: msg.value.author,
-        amount: 1,
+        amount: "1",
         description: null,
         tokenType: msg.value.content.tokenType
       }
 
       var err = ssb.tokens.validate.format(burnOp)
       t.true(err)
+      t.true(err.sources)
       t.end()
     })
   })
@@ -695,13 +611,14 @@ module.exports = function run (ssb) {
         type: "tokens/" + meta['api-version'] + "/burn",
         sources: [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
         receiver: msg.value.author,
-        amount: 1,
+        amount: "1",
         description: null,
         tokenType: msg.value.content.tokenType
       }
 
       var err = ssb.tokens.validate.format(burnOp)
       t.true(err)
+      t.true(err.sources)
       t.end()
     })
   })
@@ -714,13 +631,14 @@ module.exports = function run (ssb) {
         type: "tokens/" + meta['api-version'] + "/burn",
         sources: [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
         receiver: msg.value.author,
-        amount: 1,
+        amount: "1",
         description: null,
         tokenType: msg.value.content.tokenType
       }
 
       var err = ssb.tokens.validate.format(burnOp)
       t.true(err)
+      t.true(err.sources)
       t.end()
     })
   })
@@ -731,15 +649,18 @@ module.exports = function run (ssb) {
 
       var burnOp = {
         type: "tokens/" + meta['api-version'] + "/burn",
-        sources: [ { amount: '1' } ],
+        sources: [ { amount: 'hello' } ],
         receiver: msg.value.author,
-        amount: 1,
+        amount: "1",
         description: null,
         tokenType: msg.value.content.tokenType
       }
 
       var err = ssb.tokens.validate.format(burnOp)
       t.true(err)
+      t.true(err.sources)
+      t.true(err.amount)
+      t.equal(err.index, 0)
       t.end()
     })
   })
@@ -750,15 +671,18 @@ module.exports = function run (ssb) {
 
       var burnOp = {
         type: "tokens/" + meta['api-version'] + "/burn",
-        sources: [ { amount: -1 } ],
+        sources: [ { amount: "-1" } ],
         receiver: msg.value.author,
-        amount: 1,
+        amount: "1",
         description: null,
         tokenType: msg.value.content.tokenType
       }
 
       var err = ssb.tokens.validate.format(burnOp)
       t.true(err)
+      t.true(err.sources)
+      t.true(err.amount)
+      t.equal(err.index, 0)
       t.end()
     })
   })
@@ -769,15 +693,18 @@ module.exports = function run (ssb) {
 
       var burnOp = {
         type: "tokens/" + meta['api-version'] + "/burn",
-        sources: [ { amount: 1, id: null } ],
+        sources: [ { amount: "1", id: null } ],
         receiver: msg.value.author,
-        amount: 1,
+        amount: "1",
         description: null,
         tokenType: msg.value.content.tokenType
       }
 
       var err = ssb.tokens.validate.format(burnOp)
       t.true(err)
+      t.true(err.sources)
+      t.equal(err.index, 0)
+      t.true(err.id)
       t.end()
     })
   })
@@ -788,15 +715,18 @@ module.exports = function run (ssb) {
 
       var burnOp = {
         type: "tokens/" + meta['api-version'] + "/burn",
-        sources: [ { amount: 1, id: msg.key , additional: null } ],
+        sources: [ { amount: "1", id: msg.key , additional: null } ],
         receiver: msg.value.author,
-        amount: 1,
+        amount: "1",
         description: null,
         tokenType: msg.value.content.tokenType
       }
 
       var err = ssb.tokens.validate.format(burnOp)
       t.true(err)
+      t.true(err.sources)
+      t.equal(err.index, 0)
+      t.true(err.keys)
       t.end()
     })
   })
@@ -807,15 +737,16 @@ module.exports = function run (ssb) {
 
       var burnOp = {
         type: "tokens/" + meta['api-version'] + "/burn",
-        sources: [ { amount: 1, id: msg.key } ],
+        sources: [ { amount: "1", id: msg.key } ],
         receiver: msg.value.author,
-        amount: 2,
+        amount: "2",
         description: null,
         tokenType: msg.value.content.tokenType
       }
 
       var err = ssb.tokens.validate.format(burnOp)
       t.true(err)
+      t.true(err.amount)
       t.end()
     })
   })
@@ -826,15 +757,17 @@ module.exports = function run (ssb) {
 
       var burnOp = {
         type: "tokens/" + meta['api-version'] + "/burn",
-        sources: [ { amount: 1, id: msg.key }, { amount: 1, id: msg.key } ],
+        sources: [ { amount: "1", id: msg.key }, { amount: "1", id: msg.key } ],
         receiver: msg.value.author,
-        amount: 2,
+        amount: "2",
         description: null,
         tokenType: msg.value.content.tokenType
       }
 
       var err = ssb.tokens.validate.format(burnOp)
       t.true(err)
+      t.true(err.sources)
+      t.true(err.nonunique)
       t.end()
     })
   })

@@ -51,7 +51,7 @@ module.exports = function run (ssb) {
     t.error(err)
 
     t.equal(bal.tokenType, farmerCredit)
-    t.equal(bal.amount, 1480)
+    t.equal(bal.amount.toNumber(), 1480)
     t.equal(bal.created.length, 1)
     t.equal(bal.created[0], createMsg.key)
     t.equal(bal.given.length, 2)
@@ -66,7 +66,7 @@ module.exports = function run (ssb) {
     t.error(err)
 
     t.equal(bal.tokenType, farmerCredit)
-    t.equal(bal.amount, 9)
+    t.equal(bal.amount.toNumber(), 9)
     t.equal(bal.created.length, 0)
     t.equal(bal.given.length, 1)
     t.equal(bal.given[0], giveMsg3.key)
@@ -78,7 +78,7 @@ module.exports = function run (ssb) {
     t.error(err)
 
     t.equal(bal.tokenType, farmerCredit)
-    t.equal(bal.amount, 9)
+    t.equal(bal.amount.toNumber(), 9)
     t.equal(bal.created.length, 0)
     t.equal(bal.given.length, 1)
     t.equal(bal.given[0], giveMsg4.key)
