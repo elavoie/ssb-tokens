@@ -1913,12 +1913,21 @@ function checkSourceParams(s) {
     if (typeof s.amount !== 'undefined' && 
         typeof s.amount !== 'number' &&
         typeof s.amount !== 'string' &&
-        !(s.amount instanceof Decimal) &&
-        typeof s.amount !== 'null') 
-      return causes("amount",
-             new Error("Invalid source amount " + s.amount + " for source " + 
-                        JSON.stringify(s) + 
-                        ", expected number, string, or Decimal instead of " + typeof s.amount))
+        typeof s.amount !== 'null') {
+      var err = null
+      try {
+        Decimal(s.amount)
+      } catch (_err) {
+        err = _err 
+      }
+
+      if (err)
+        return causes("amount",
+              new Error("Invalid source amount " + s.amount + " for source " + 
+                          JSON.stringify(s) + 
+                          ", expected number, string, or Decimal instead of "
+                          + typeof s.amount))
+    }
 
     if (s.id && !ref.isMsgId(s.id))
       return causes("id",
