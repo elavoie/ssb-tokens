@@ -36,7 +36,7 @@ var ALLOWEDCHARS = ' !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ
 var TOKENTYPELENGTH = 16
 var NAMELENGTH = 30
 var UNITLENGTH = 10
-var AMOUNTLENGTH = 79 // 78 digits to represent numbers up to 10^78 (> 2^256 used by ERC20) plus floating point '.'
+var AMOUNTLENGTH = 83 // 78 digits to represent numbers up to 10^78 (> 2^256 used by ERC20) plus floating point '.' and 'e+XX' notation
 var sum = (a,b) => a+b
 var sumd = (a,b) => a.add(b)
 
@@ -226,7 +226,7 @@ function formatCreate (op) {
     var c = op.name.charCodeAt(i)
     if (c < 32 || c > 126 ) {
       return causes('name', 
-               new Error("Invalid character '" + op.name[i] + "' in name " +
+               new Error("Invalid character '" + op.name[i] + "' (" + c + ") in name " +
                        " for operation " + JSON.stringify(op) + 
                        ", expected only characters within '" + 
                        ALLOWEDCHARS + "'"))
@@ -237,7 +237,7 @@ function formatCreate (op) {
     var c = op.unit.charCodeAt(i)
     if (c < 32 || c > 126 ) {
       return causes('unit',
-               new Error("Invalid character '" + op.unit[i] + "' in unit," +
+               new Error("Invalid character '" + op.unit[i] + "' (" + c + ") in unit," +
                        " for operation " + JSON.stringify(op) + 
                        ", expected only characters within '" + 
                        ALLOWEDCHARS + "'"))
@@ -281,10 +281,10 @@ function formatTransfer (op) {
                      ", should be an array"))
 
   // Bounded
-  if (op.sources.length > 10)
+  if (op.sources.length > 30)
     return causes('sources',
            new Error("Too many sources for operation " + JSON.stringify(op) +
-                      ", expected 10 sources maximum"))
+                      ", expected 30 sources maximum"))
 
   // Check sources, while computing total amount from sources
   var total = ZEROD 
