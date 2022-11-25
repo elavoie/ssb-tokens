@@ -3,6 +3,7 @@ var fs = require('fs')
 var ref = require('ssb-ref')
 var pull = require('pull-stream')
 var binUtil = require('./util')
+var Decimal = require('decimal.js')
 
 module.exports = function (ssb, args, cb) {
   if (args.help ||
@@ -127,7 +128,7 @@ module.exports = function (ssb, args, cb) {
             if (err) return cb(err) 
 
             var tokName = (Object.values(types)[0] || {}).name
-            console.log('@' + ownerName + ' has ' + unspent + ' ' + 
+            console.log('@' + ownerName + ' has ' + unspent.toString() + ' ' + 
                         tokName + ' remaining from ' + msgId.slice(0,5) +
                         '... (tokenType: ' + op.tokenType + ')')
 

@@ -3,13 +3,19 @@ var fs = require('fs')
 var ref = require('ssb-ref')
 var pull = require('pull-stream')
 var binUtil = require('./util')
+var Decimal = require('decimal.js')
+var ZEROD = Decimal(0)
 
 function sum (a,b) {
   return a+b
 }
 
+function sumd (a,b) {
+  return Decimal(a).add(Decimal(b))
+}
+
 function unique (s, x) {
-  s[x[0]] = (s[x[0]] || 0) + x[1]
+  s[x[0]] = (s[x[0]] || ZEROD).add(x[1])
   return s
 }
 
@@ -62,7 +68,7 @@ module.exports = function (ssb, args, cb) {
           if (err) return cb(err) 
 
           var tokName = (Object.values(types)[0] || {}).name
-          console.log('@' + ownerName + ' owns ' + bal.amount + ' ' + tokName + ' (tokenType: ' + bal.tokenType + ')')
+          console.log('@' + ownerName + ' owns ' + bal.amount.toString() + ' ' + tokName + ' (tokenType: ' + bal.tokenType + ')')
           
           var amount = function (id) { return bal.all[id].value.content.amount }
           var giver = function (id) { 
@@ -72,8 +78,8 @@ module.exports = function (ssb, args, cb) {
             return [bal.all[id].value.content.receiver, amount(id)] 
           }
 
-          var created = bal.created.map(amount).reduce(sum,0)
-          var burnt = bal.burnt.map(amount).reduce(sum,0)
+          var created = bal.created.map(amount).reduce(sumd,ZEROD)
+          var burnt = bal.burnt.map(amount).reduce(sumd,ZEROD)
 
           var givers = bal.received.map(giver).reduce(unique, {})
           var receivers = bal.given.map(receiver).reduce(unique, {})
@@ -96,16 +102,16 @@ module.exports = function (ssb, args, cb) {
               givers = Object.keys(givers).map((id) => ['@' + names[id], givers[id]])
               receivers = Object.keys(receivers).map((id) => ['@' + names[id], receivers[id]])
 
-              console.log('    created ' + created)
+              console.log('    created ' + created.toString())
               console.log('    received ' +
                                (givers.length ? 
-                                 givers.map((x) => x[1] + ' from ' + x[0]).join(', ') : 
+                                 givers.map((x) => x[1].toString() + ' from ' + x[0]).join(', ') : 
                                  '0'))
               console.log('    gave ' + 
                                (receivers.length ? 
-                                 receivers.map((x) => x[1] + ' to ' + x[0]).join(', ') :
+                                 receivers.map((x) => x[1].toString() + ' to ' + x[0]).join(', ') :
                                  '0'))
-              console.log('    burnt ' + burnt)
+              console.log('    burnt ' + burnt.toString())
               console.log()
               
               return cb(null)
