@@ -71,6 +71,11 @@ exports.init = function (sbot, config) {
       if (sbot.id === id) return sbot.keys
       else return keysMap[id] 
     }, // Not exposed through RPC
+    add: function (ids) { 
+      Object.values(ids).forEach(function (keys) {
+        keysMap[keys.id] = keys
+      })
+    }, // Not exposed through RPC
     publishAs: function (opts, cb) {
       var id = opts.id
       if(locks[id]) return cb(new Error('already writing'))
