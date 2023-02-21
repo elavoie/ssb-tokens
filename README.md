@@ -1,12 +1,8 @@
 # SSB-Tokens
 
+*This project has been archived because SSB does not provide eventual-consistency in the presence of forks and the token representation and database queries used incur exponentially growing computation time with the number of transactions. It might nonetheless be a good inspiration for other kinds of  Non-Fungible token applications, such as book lending, etc. for which there are no incentives for participants to fork and there is a single ancestor to every give operation.*
+
 ````Tokens for community economics. Built with [Secure-Scuttlebutt](https://scuttlebutt.nz/).````
-
-## Quick Start
-
-```
-    npm install -g ssb-tokens
-```
 
 ## Command-Line Interface
 
@@ -26,18 +22,6 @@
 
 ```
     ssb-tokens burn
-```
-
-### [trace](./help/trace.txt): trace the history of transactions behind tokens!
-
-```
-    ssb-tokens trace
-```
-
-### [list](./help/list.txt): Summarize all your token holdings (or those of others)!
-
-```
-    ssb-tokens list
 ```
 
 ## Example Applications
