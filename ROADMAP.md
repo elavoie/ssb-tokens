@@ -55,7 +55,7 @@
     [ ] Paper
        [x] Update API to create operations without automatic publishing
            on the database
-       [ ] Refactor to use decimal.js for arbitrary-precision operations 
+       [x] Refactor to use decimal.js for arbitrary-precision operations 
            (ERC20 tokens expect 256-bits uint for amounts while JavaScript uses doubles (max 52-bits uint)
            [x] Use a single global Decimal constructor with precision limited to 78 digits (just enough
                to represent all uint256 numbers supported by ERC20)
@@ -69,7 +69,7 @@
            [x] Modify queries to return amounts as Decimal object instead of Number
            [x] Remove support for decimals and represent amounts with 79 characters max (78 digits + '.')
            [x] Modify doc/api.md and help/* to reflect new semantics for decimals
-       [ ] Implement simulator of ERC20 transactions (see experiments roadmap)
+       [x] Implement simulator of ERC20 transactions (see experiments roadmap)
        [ ] Measure performance
        [ ] Optimize to run in reasonable time on Raspberry Pi 4
        [ ] Update SSB-Tokens paper and submit to Middleware 2023
